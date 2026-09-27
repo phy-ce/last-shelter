@@ -3,6 +3,7 @@ import { bodyDiagram } from '../ui/body-diagram.js'
 import { uiIcon } from '../ui/icons.js'
 import { settings, motionOn, saveSettings } from '../core/settings.js'
 import { saveRun, loadRun, clearRun } from '../core/save.js'
+import { preloadArt } from '../boot/preload.js'
 import { Sound } from '../audio/engine.js'
 import * as rules from '../core/combat-rules.js'
 import { CARDS, CARD_FLAVOR, STAGES, LIMBS, BURN_TEXT, skillEffects } from '../content/combat.js'
@@ -2091,21 +2092,10 @@ const displayFont = (() => {
               heading.append(
                 el("span", "upgrade-kind", "장비 강화"),
                 el("strong", "", itemData.name),
-                el("small", "", `카드 ${bundle.length}장 동시 강화`)
+                el("small", "", `카드 ${bundle.length}장 동시 강화 · 호버로 비교`)
               );
-              const rows = el("div", "upgrade-bundle-cards");
-              for (const bundledCard of bundle) {
-                const upgradedCard = { ...bundledCard, upgraded: true };
-                const row = el("div", "upgrade-skill-row");
-                row.append(
-                  el("strong", "", CARDS[bundledCard.key].name),
-                  el("span", "before", summary(bundledCard, false)),
-                  el("b", "upgrade-arrow", "→"),
-                  el("span", "after", summary(upgradedCard, false))
-                );
-                rows.append(row);
-              }
-              node.append(heading, rows);
+              node.append(itemArtNode(itemData, "upgrade-item-art"), heading);
+              bindUpgradeItemTooltip(node, itemData);
               content.append(node);
               continue;
             }
@@ -3161,6 +3151,51 @@ const displayFont = (() => {
       node.addEventListener("blur", hideTooltip);
     }
 
+    function upgradeItemTooltip(item, anchor) {
+      const root = $("tooltip");
+      root.className = "tooltip item-preview-tooltip upgrade-item-tooltip";
+      root.replaceChildren();
+      const heading = el("div", "upgrade-tooltip-heading");
+      heading.append(
+        el("span", "upgrade-kind", "장비 강화"),
+        el("strong", "", item.name),
+        el("small", "", `${item.hands === 2 ? "양손" : "한손"} 장비 · 카드 ${item.cards.length}장 동시 강화`)
+      );
+      root.append(heading);
+      const rail = el("div", "upgrade-tooltip-cards");
+      for (const key of item.cards) {
+        const data = CARDS[key];
+        const card = el("article", `upgrade-tooltip-card rarity-${data.rarity}`);
+        appendArt(card, key);
+        const copy = el("div", "upgrade-tooltip-copy");
+        copy.append(
+          el("strong", "", `${data.name} · ${data.cost} AP`),
+          el("span", "before", summary({ key, upgraded: false }, false)),
+          el("b", "upgrade-arrow", "→"),
+          el("span", "after", summary({ key, upgraded: true }, false))
+        );
+        card.append(copy);
+        rail.append(card);
+      }
+      root.append(rail);
+      root.hidden = false;
+      root.style.left = "8px";
+      root.style.top = "8px";
+      const rect = anchor.getBoundingClientRect();
+      const box = root.getBoundingClientRect();
+      let top = rect.top - box.height - 10;
+      if (top < 8) top = rect.bottom + 10;
+      root.style.left = `${clamp(rect.left + rect.width / 2 - box.width / 2, 8, Math.max(8, innerWidth - box.width - 8))}px`;
+      root.style.top = `${clamp(top, 8, Math.max(8, innerHeight - box.height - 8))}px`;
+    }
+
+    function bindUpgradeItemTooltip(node, item) {
+      node.addEventListener("pointerenter", () => { if (finePointer.matches) upgradeItemTooltip(item, node); });
+      node.addEventListener("pointerleave", hideTooltip);
+      node.addEventListener("focus", () => upgradeItemTooltip(item, node));
+      node.addEventListener("blur", hideTooltip);
+    }
+
     function summary(card, includeTemporaryStrength = ["combat", "playing", "resolving"].includes(state?.phase)) {
       const data = CARDS[card.key];
       const u = card.upgraded;
@@ -3570,6 +3605,15 @@ const displayFont = (() => {
           grabToken.append(grabIcon);
           intent.append(grabToken);
         }
+        // 복합 의도(방어 + 힘 모으기): 방어 옆에 힘 모으기도 보인다.
+        if (enemy.intent?.charge && !rules.intentsHidden(state)) {
+          const chargeIcon = el("img", "intent-icon");
+          chargeIcon.src = INTENT_ICONS.charge;
+          chargeIcon.alt = "힘 모으기";
+          const chargeToken = el("span", "intent-token intent-charge-token");
+          chargeToken.append(chargeIcon);
+          intent.append(chargeToken);
+        }
         if (enemy.intent?.coin && !rules.intentsHidden(state)) {
           const coinToken = el("span", "intent-token intent-coin-token");
           coinToken.setAttribute("aria-label", "동전 판정");
@@ -3912,6 +3956,14 @@ const displayFont = (() => {
     syncMotion();
     paintBackground();
     resizeCanvas();
+    // 첫 화면·첫 전투 그림을 다 받은 뒤 시작한다. 나머지는 preloadArt가 뒤에서 받는다.
+    openModal({ type: "options", title: "불러오는 중", subtitle: "LOADING", description: "그림 준비 중", options: [] });
+    preloadArt((done, total) => {
+      const line = $("modal").querySelector(".description");
+      if (line) line.textContent = `그림 준비 중 · ${done} / ${total}`;
+    }).then(boot);
+
+    function boot() {
     const savedRun = loadRun();
     if (savedRun) {
       openModal({
@@ -3926,6 +3978,7 @@ const displayFont = (() => {
       });
     } else {
       chooseClass();
+    }
     }
     resumeFrames();
   

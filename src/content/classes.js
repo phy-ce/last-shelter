@@ -12,7 +12,7 @@ export const CLASSES = {
     name: '생존자',
     tagline: '평범하게 시작한다. 손에 든 것이 전부다.',
     hp: 76,
-    skills: [['knife', 4], ['guard', 4]],
+    skills: [['knife', 4], ['guard', 4], ['maintenance', 1]],
     inventory: ['crowbar', 'medkit', 'magazine'],
     startUses: { magazine: 4 }, // 시작 탄약은 반 상자
     equip: 'crowbar',
@@ -33,7 +33,7 @@ export const CLASSES = {
     name: '광인',
     tagline: '그것들이 무엇을 하려는지 보지 않는다. 볼 필요가 없다.',
     hp: 80,
-    skills: [['knife', 4], ['guard', 4]],
+    skills: [['knife', 4], ['guard', 4], ['maintenance', 1]],
     inventory: ['crowbar', 'medkit', 'magazine'],
     startUses: { magazine: 4 }, // 시작 탄약은 반 상자
     equip: 'crowbar',
