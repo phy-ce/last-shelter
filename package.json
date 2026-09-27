@@ -8,7 +8,6 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "node tools/check-content.mjs",
-    "audio": "node tools/generate-audio.mjs",
     "sim": "node tools/simulate.mjs",
     "smoke:serve": "node tools/smoke/serve.mjs",
     "smoke": "node tools/smoke/drive.mjs"

@@ -43,4 +43,5 @@ Two AIs share this codebase; see `CLAUDE.md` / `AGENTS.md` for file ownership an
 
 Music: "Oppressive Gloom", "The Descent", "Volatile Reaction" — Kevin MacLeod (incompetech.com),
 licensed under Creative Commons: By Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/).
-Details: `public/assets/audio/music/CREDITS.md`. Sound effect licenses: `public/assets/audio/cc0/LICENSES.md`.
+Details: `public/assets/audio/music/CREDITS.md`.
+Sound effects: excerpts from the Sonniss GDC Game Audio Bundle (royalty-free, no attribution required); see `public/assets/audio/sonniss/CREDITS.md`.

@@ -1,37 +1,36 @@
 import { settings } from '../core/settings.js'
 
+// 효과음은 전부 Sonniss GDC Game Audio Bundle에서 잘라 왔다(출처: public/assets/audio/sonniss/CREDITS.md).
+const S = name => `/assets/audio/sonniss/${name}.ogg`
+
 const files = {
-  coin: ['/assets/audio/coin-toss.wav', '/assets/audio/cc0/coin-handle.ogg'],
-  pistol: ['/assets/audio/pistol-tail.wav', '/assets/audio/cc0/metal-click.ogg'],
-  shotgun: ['/assets/audio/shotgun-tail.wav', '/assets/audio/cc0/metal-heavy.ogg'],
-  knife: ['/assets/audio/cc0/knife-slice.ogg', '/assets/audio/cc0/body-medium.ogg'],
-  axe: ['/assets/audio/cc0/chop.ogg', '/assets/audio/cc0/body-heavy.ogg'],
-  guard: ['/assets/audio/cc0/plank-medium.ogg', '/assets/audio/cc0/wood-heavy.ogg'],
-  grenade: ['/assets/audio/cc0/body-heavy.ogg', '/assets/audio/cc0/metal-heavy.ogg'],
-  flare: ['/assets/audio/cc0/metal-click.ogg'],
-  hit: ['/assets/audio/body-impact.wav', '/assets/audio/cc0/body-heavy.ogg'],
-  blockHit: ['/assets/audio/cc0/wood-heavy.ogg', '/assets/audio/cc0/body-medium.ogg'],
-  cardDrop: ['/assets/audio/cc0/card-drop.ogg'],
-  playerInjury: ['/assets/audio/cc0/cloth.ogg'],
-  playerDeath: ['/assets/audio/cc0/body-heavy.ogg'],
-  zombieDeath: ['/assets/audio/cc0/body-heavy.ogg'],
+  coin: [S('coin')],
+  pistol: [S('pistol'), S('gun-handle')],
+  shotgun: [S('shotgun'), S('gun-handle')],
+  knife: [S('knife-swing'), S('knife-flesh')],
+  axe: [S('axe-chop'), S('axe-bone')],
+  guard: [S('guard')],
+  grenade: [S('grenade')],
+  flare: [S('flare')],
+  hit: [S('hit')],
+  blockHit: [S('block-hit')],
+  cardDrop: [S('card')],
+  flashbang: [S('flashbang')],
+  glass: [S('glass')],
+  heal: [S('heal')],
+  reward: [S('reward')],
+  focus: [S('focus')],
+  quiet: [S('quiet')],
+  search: [S('search')],
+  playerInjury: [],
+  playerDeath: [S('death-body')],
+  zombieDeath: [],
 }
 
 const screamVariants = {
-  playerInjury: [
-    '/assets/audio/cc0/male-injury.ogg',
-    '/assets/audio/cc0/male-injury-2.ogg',
-    '/assets/audio/cc0/male-injury-3.ogg',
-  ],
-  playerDeath: [
-    '/assets/audio/cc0/male-death.ogg',
-    '/assets/audio/cc0/male-death-2.ogg',
-  ],
-  zombieDeath: [
-    '/assets/audio/cc0/zombies/death-1.wav',
-    '/assets/audio/cc0/zombies/death-2.wav',
-    '/assets/audio/cc0/zombies/death-3.wav',
-  ],
+  playerInjury: [S('injury-1'), S('injury-2'), S('injury-3')],
+  playerDeath: [S('death-scream')],
+  zombieDeath: [S('zombie-1'), S('zombie-2'), S('zombie-3')],
 }
 
 // 브라우저(특히 모바일 Chrome)는 동시에 살아 있는 미디어 엘리먼트 수를 제한한다.
@@ -88,6 +87,8 @@ function fadeVoice(audio, peak) {
 }
 
 export const Samples = {
+  /** 이 소리에 녹음 샘플이 있으면 true. 있으면 엔진의 합성음은 얹지 않는다. */
+  has(key) { return Boolean(files[key]?.length || screamVariants[key]?.length) },
   preload() {
     for (const src of new Set([...Object.values(files).flat(), ...Object.values(screamVariants).flat()])) {
       if (!pools.has(src)) pools.set(src, [voice(src)])

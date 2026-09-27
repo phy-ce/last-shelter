@@ -298,6 +298,8 @@ export const Sound = (() => {
       function play(key) {
         if (!ac || ac.state !== "running" || document.hidden) return;
         Samples.play(key);
+        // 녹음 샘플(Sonniss)이 있는 소리는 합성음을 겹치지 않는다. 없는 소리만 합성으로 낸다.
+        if (Samples.has(key)) return;
         const at = ac.currentTime + 0.006;
 
         switch (key) {
