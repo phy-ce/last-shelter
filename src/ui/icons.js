@@ -1,31 +1,32 @@
-const paths = {
-  attack: '<path d="m14 3 7-1-1 7-10 10-5-5L14 3Z M4 13l7 7M3 21l4-4"/>',
-  cards: '<rect x="7" y="6" width="13" height="15" rx="2"/><path d="M16 3H4a1 1 0 0 0-1 1v13M11 11h5m-5 4h5"/>',
-  discard: '<path d="M5 4h14v11H5zM8 8h8M9 18l3 3 3-3m-3-3v6"/>',
-  ammo: '<path d="M8 21V8l4-6 4 6v13ZM8 16h8M8 19h8M8 8h8"/>',
-  flame: '<path d="M12 2c3 5-1 6 2 9l3-4c4 5 5 9 1 13-4 4-12 1-12-4 0-4 4-6 6-14Z"/>',
-  stagger: '<path d="m3 7 5 3-3 4 5 1m11-8-5 3 3 4-5 1M10 3l2 4 2-4M9 20h6"/>',
-  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/>',
-  coin: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="6"/><path d="m12 8 3 4-3 4-3-4 3-4Z"/>',
-  all: '<circle cx="12" cy="9" r="3"/><path d="M7 21v-4a5 5 0 0 1 10 0v4M4 8a3 3 0 0 0 0 6m16-6a3 3 0 0 1 0 6M2 21v-3m20 3v-3"/>',
-  arm: '<path d="m8 3 3 2-3 8 6 2 3-4 4 2-3 7-10-1-5-4 5-12Z"/>',
-  leg: '<path d="m8 3 7 1-2 8 3 7 5 1v2h-9L8 12l-2-1 2-8Z"/>',
-  eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
-  hidden: '<path d="m3 3 18 18M10 5c6-1 12 7 12 7l-3 3M6 6l-4 6s7 11 16 5M9 9a4 4 0 0 0 6 6"/>',
-  choice: '<path d="M12 22V12L5 5m7 7 7-7M3 10V3h7m4 0h7v7"/>',
-  exhaust: '<path d="M7 3h10v10H7zM10 16l-2 3m5-3v5m3-5 2 3"/>',
-  heal: '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3Z"/>',
-  heart: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"/>',
-  energy: '<path d="m13 2-9 12h7l-1 8 10-13h-7l1-7Z"/>',
-  shield: '<path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/>',
-  infection: '<path d="M12 2S5 10 5 15a7 7 0 0 0 14 0c0-5-7-13-7-13Z"/><path d="M9 15h6m-3-3v6"/>',
-  body: '<circle cx="12" cy="4" r="2"/><path d="m5 9 7-2 7 2M12 7v7m0 0-4 7m4-7 4 7M8 8l-2 7m10-7 2 7"/>',
-  noise: '<path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/>',
-};
-
-// Tabler Icons 3.48.0 (MIT). Combat-only glyphs are kept separate so the
-// status/intent language can be tuned without changing cards or navigation.
+// Tabler Icons 3.48.0 (MIT). Every reusable UI glyph lives here; no custom
+// path fallback is kept, so navigation, cards, status and intents share one language.
 const tablerIcons = {
+  attack: { body: '<path d="M20 4v5l-9 7-4 4-3-3 4-4 7-9h5"/><path d="m6.5 11.5 6 6"/>' },
+  cards: { body: '<path d="m3.604 7.197 7.138-3.109a.96.96 0 0 1 1.27.527l4.924 11.902a1 1 0 0 1-.514 1.304l-7.137 3.109a.96.96 0 0 1-1.271-.527L3.09 8.5a1 1 0 0 1 .514-1.304"/><path d="M15 4h1a1 1 0 0 1 1 1v3.5M20 6l.768.315a1 1 0 0 1 .53 1.311L19 13"/>' },
+  discard: { body: '<path d="M4 7h16M10 11v6m4-6v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3"/>' },
+  ammo: { body: '<path d="M11 12a1 1 0 1 0 2 0 1 1 0 0 0-2 0M12 7a5 5 0 1 0 5 5M13 3.055A9 9 0 1 0 20.941 11M15 6v3h3l3-3h-3V3l-3 3m0 3-3 3"/>' },
+  flame: { body: '<path d="M12 10.941c2.333-3.308.167-7.823-1-8.941 0 3.395-2.235 5.299-3.667 6.706C5.903 10.114 5 12 5 14.294 5 17.998 8.134 21 12 21s7-3.002 7-6.706c0-1.712-1.232-4.403-2.333-5.588-2.084 3.353-3.257 3.353-4.667 2.235"/>' },
+  stagger: { body: '<path d="M4 12h6l-6 8h6M14 4h6l-6 8h6"/>' },
+  clock: { body: '<path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M12 7v5l3 3"/>' },
+  coin: { body: '<path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0M14.8 9A2 2 0 0 0 13 8h-2a2 2 0 1 0 0 4h2a2 2 0 1 1 0 4h-2a2 2 0 0 1-1.8-1M12 7v10"/>' },
+  all: { body: '<path d="M5 7a4 4 0 1 0 8 0 4 4 0 0 0-8 0M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2M16 3.13a4 4 0 0 1 0 7.75M21 21v-2a4 4 0 0 0-3-3.85"/>' },
+  arm: { body: '<path d="M8 13V4.5a1.5 1.5 0 0 1 3 0V12m0-.5v-2a1.5 1.5 0 1 1 3 0V12m0-1.5a1.5 1.5 0 0 1 3 0V12m0-.5a1.5 1.5 0 0 1 3 0V16a6 6 0 0 1-6 6h-1.792a6 6 0 0 1-5.012-2.7L7 19l-3.286-5.728A1.5 1.5 0 0 1 6.53 11.53L8 13"/>' },
+  leg: { body: '<path d="M12 4a1 1 0 1 0 2 0 1 1 0 0 0-2 0M7 21l3-4m6 4-2-4-3-3 1-6M6 12l2-3 4-1 3 3 3 1"/>' },
+  eye: { body: '<path d="M10 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0M21 12c-2.4 4-5.4 6-9 6s-6.6-2-9-6c2.4-4 5.4-6 9-6s6.6 2 9 6"/>' },
+  hidden: { body: '<path d="M10.585 10.587a2 2 0 0 0 2.829 2.828M16.681 16.673A8.717 8.717 0 0 1 12 18c-3.6 0-6.6-2-9-6 1.272-2.12 2.712-3.678 4.32-4.674m2.86-1.146A9.055 9.055 0 0 1 12 6c3.6 0 6.6 2 9 6-.666 1.11-1.379 2.067-2.138 2.87M3 3l18 18"/>' },
+  choice: { body: '<path d="M3 19a2 2 0 1 0 4 0 2 2 0 0 0-4 0M19 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4M11 19h5.5a3.5 3.5 0 0 0 0-7h-8a3.5 3.5 0 0 1 0-7H13"/>' },
+  exhaust: { body: '<path d="M6.5 7h11m-11 10h11M6 20v-2a6 6 0 1 1 12 0v2a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1M6 4v2a6 6 0 1 0 12 0V4a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1"/>' },
+  heal: { body: '<path d="M13 3a1 1 0 0 1 1 1v4.535l3.928-2.267a1 1 0 0 1 1.366.366l1 1.732a1 1 0 0 1-.366 1.366L16.001 12l3.927 2.269a1 1 0 0 1 .366 1.366l-1 1.732a1 1 0 0 1-1.366.366L14 15.464V20a1 1 0 0 1-1 1h-2a1 1 0 0 1-1-1v-4.536l-3.928 2.268a1 1 0 0 1-1.366-.366l-1-1.732a1 1 0 0 1 .366-1.366L7.999 12 4.072 9.732a1 1 0 0 1-.366-1.366l1-1.732a1 1 0 0 1 1.366-.366L10 8.535V4a1 1 0 0 1 1-1h2"/>' },
+  heart: { body: '<path d="m19.5 12.572-7.5 7.428-7.5-7.428A5 5 0 1 1 12 6.006a5 5 0 1 1 7.5 6.572"/>' },
+  energy: { body: '<path d="M13 3v7h6l-8 11v-7H5l8-11"/>' },
+  shield: { body: '<path d="M12 3a12 12 0 0 0 8.5 3A12 12 0 0 1 12 21 12 12 0 0 1 3.5 6 12 12 0 0 0 12 3"/>' },
+  infection: { body: '<path d="M7 12a5 5 0 1 0 10 0 5 5 0 1 0-10 0M12 7V3m-1 0h2m2.536 5.464 2.828-2.828m-.707-.707 1.414 1.414M17 12h4m0-1v2m-5.465 2.536 2.829 2.828m.707-.707-1.414 1.414M12 17v4m1 0h-2m-2.535-5.464-2.829 2.828m.707.707L4.93 17.657M7 12H3m0 1v-2m5.464-2.536L5.636 5.636m-.707.707L6.343 4.93"/>' },
+  body: { body: '<path d="M10 9a2 2 0 1 0 4 0 2 2 0 0 0-4 0M8 16a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2M3 7V5a2 2 0 0 1 2-2h2M3 17v2a2 2 0 0 0 2 2h2M17 3h2a2 2 0 0 1 2 2v2M17 21h2a2 2 0 0 0 2-2v-2"/>' },
+  noise: { body: '<path d="M21 12h-2c-.894 0-1.662-.857-1.761-2-.296-3.45-.749-6-2.749-6s-2.5 3.582-2.5 8-.5 8-2.5 8-2.452-2.547-2.749-6c-.1-1.147-.867-2-1.763-2H3"/>' },
+  codex: { body: '<path d="M19 4v16H7a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12m0 12H7a2 2 0 0 0-2 2M9 8h6"/>' },
+  log: { body: '<path d="M6 4h11a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1m3 0v18m4-14h2m-2 4h2"/>' },
+  help: { body: '<path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0m9 4v.01M12 13a2 2 0 0 0 .914-3.782 1.98 1.98 0 0 0-2.414.483"/>' },
+  settings: { body: '<path d="M12 6a2 2 0 1 0 4 0 2 2 0 0 0-4 0M4 6h8m4 0h4M6 12a2 2 0 1 0 4 0 2 2 0 0 0-4 0m-4 0h2m4 0h10m-5 6a2 2 0 1 0 4 0 2 2 0 0 0-4 0M4 18h11m4 0h1"/>' },
   "status-strength": {
     body: '<path d="M20 4v5l-9 7-4 4-3-3 4-4 7-9h5"/><path d="m6.5 11.5 6 6"/>',
   },
@@ -90,17 +91,23 @@ tablerIcons["intent-guard"] = tablerIcons["status-block"];
 tablerIcons["intent-infection"] = tablerIcons["status-infection"];
 
 export function uiIcon(name) {
-  const tabler = tablerIcons[name];
+  const tabler = tablerIcons[name] || tablerIcons.body;
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('fill', tabler?.filled ? 'currentColor' : 'none');
   svg.setAttribute('stroke', tabler?.filled ? 'none' : 'currentColor');
-  svg.setAttribute('stroke-width', tabler ? '2.2' : '1.6');
+  svg.setAttribute('stroke-width', '2');
   svg.setAttribute('stroke-linecap', 'round');
   svg.setAttribute('stroke-linejoin', 'round');
   svg.setAttribute('aria-hidden', 'true');
   svg.classList.add('hud-icon');
-  if (tabler) svg.classList.add('tabler-icon', tabler.filled ? 'is-filled' : 'is-outline');
-  svg.innerHTML = tabler?.body || paths[name] || paths.body;
+  svg.classList.add('tabler-icon', tabler.filled ? 'is-filled' : 'is-outline');
+  svg.innerHTML = tabler.body;
   return svg;
+}
+
+export function mountUiIcons(root = document) {
+  root.querySelectorAll('[data-ui-icon]').forEach((slot) => {
+    slot.replaceWith(uiIcon(slot.dataset.uiIcon));
+  });
 }

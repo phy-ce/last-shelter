@@ -1,6 +1,6 @@
 import { cardMetrics, metricStrip } from '../ui/card-metrics.js'
 import { bodyDiagram } from '../ui/body-diagram.js'
-import { uiIcon } from '../ui/icons.js'
+import { mountUiIcons, uiIcon } from '../ui/icons.js'
 import { settings, motionOn, saveSettings } from '../core/settings.js'
 import { saveRun, loadRun, clearRun } from '../core/save.js'
 import { preloadArt } from '../boot/preload.js'
@@ -13,6 +13,7 @@ import { CLASSES, classDef } from '../content/classes.js'
 import { COMBAT_BACKGROUND, SURVIVOR, heroSprite, INFECTED, ENEMY_SPRITES, ENEMY_INJURED_SPRITES, UPGRADE_EPAULETTE, CARD_ART, COIN_HEADS, COIN_TAILS, EFFECT_SPRITES, assetReady } from '../art/assets.js'
 
 const $ = (id) => document.getElementById(id);
+mountUiIcons();
 // 캔버스 텍스트도 CSS와 같은 표시용 서체를 쓴다. 한 번만 읽어 두고 프레임마다 재계산하지 않는다.
 const displayFont = (() => {
   let cached = "";
@@ -1338,14 +1339,25 @@ const displayFont = (() => {
       Music.play("explore");
       openModal({
         type: "options",
-        title: "누구로 남았는가",
+        title: "누구로 살아남을 것인가",
         subtitle: "CHOOSE SURVIVOR",
-        description: "직업은 규칙 하나를 바꿉니다. 시작 덱과 체력이 그에 맞춰집니다.",
-        options: Object.entries(CLASSES).map(([id, cls]) => ({
-          title: `${cls.name} · 체력 ${cls.hp}`,
-          text: `${cls.tagline}\n${classTraitText(cls)}\n시작: ${cls.skills.map(([key, count]) => `${CARDS[key].name} ×${count}`).join(" · ")}${cls.inventory.length ? ` / ${cls.inventory.map((key) => itemDef(key).name).join(" · ")}` : ""}`,
-          action: () => newGame(id)
-        }))
+        description: "시작 체력과 덱, 전투 규칙이 달라집니다.",
+        options: Object.entries(CLASSES).map(([id, cls]) => {
+          const skills = cls.skills.map(([key, count]) => `${CARDS[key].name} ×${count}`);
+          const inventory = cls.inventory.map((key) => itemDef(key).name);
+          const trait = classTraitText(cls).replace(/^특성:\s*/, "");
+          return {
+            classId: id,
+            title: cls.name,
+            hp: cls.hp,
+            tagline: cls.tagline,
+            trait,
+            skills,
+            inventory,
+            text: `${cls.tagline}\n${trait}\n시작 기술: ${skills.join(" · ")}${inventory.length ? ` / 장비: ${inventory.join(" · ")}` : ""}`,
+            action: () => newGame(id)
+          };
+        })
       });
     }
 
@@ -2380,37 +2392,64 @@ const displayFont = (() => {
           node.disabled = Boolean(option.disabled);
           if (classScreen) {
             node.classList.add("class-choice");
-            const portraits = [
-              "/assets/art/survivor-class-v1.webp",
-              "/assets/art/survivor-mage-v1.webp",
-              "/assets/art/survivor-berserker-v1.webp"
-            ];
+            node.dataset.class = option.classId;
+            const classPresentation = {
+              survivor: { number: "01", role: "균형형", icon: "body", portrait: "/assets/art/survivor-class-v1.webp" },
+              mage: { number: "02", role: "예약 주문", icon: "status-pending", portrait: "/assets/art/survivor-mage-v1.webp" },
+              berserker: { number: "03", role: "공세형", icon: "status-strength", portrait: "/assets/art/survivor-berserker-v1.webp" },
+            };
+            const presentation = classPresentation[option.classId] || classPresentation.survivor;
             const portrait = el("div", "class-portrait");
             const portraitImage = el("img", "");
-            portraitImage.src = portraits[index] || portraits[0];
+            portraitImage.src = presentation.portrait;
             portraitImage.alt = "";
             portraitImage.decoding = "async";
             portrait.append(portraitImage);
+            portrait.append(
+              el("span", "class-number", presentation.number),
+              el("span", "class-role", presentation.role)
+            );
             const emblem = el("div", "class-emblem");
-            emblem.append(uiIcon(["body", "eye", "attack"][index] || "body"));
+            emblem.append(uiIcon(presentation.icon));
             portrait.append(emblem);
             node.append(portrait);
           }
           if (classScreen) {
-            const [tagline, trait, ...loadout] = option.text.split("\n");
             node.setAttribute("aria-label", `${option.title}. ${option.text}`);
-            node.append(
-              el("strong", "", option.title),
-              el("p", "class-tagline", tagline),
-              el("p", "class-trait", trait),
-              el("p", "class-loadout", loadout.join("\n"))
+            const body = el("div", "class-choice-body");
+            const heading = el("div", "class-choice-heading");
+            const vitality = el("span", "class-vitality");
+            vitality.append(uiIcon("heart"), el("b", "", option.hp), el("small", "", "HP"));
+            heading.append(el("strong", "class-name", option.title), vitality);
+
+            const trait = el("div", "class-trait");
+            trait.append(el("span", "class-section-label", "고유 규칙"), el("p", "", option.trait));
+
+            const loadout = el("div", "class-loadout");
+            const skillGroup = el("div", "class-loadout-group");
+            const skillItems = el("div", "class-loadout-items");
+            option.skills.forEach((text) => skillItems.append(el("span", "class-loadout-item", text)));
+            skillGroup.append(el("span", "class-section-label", "시작 기술"), skillItems);
+            const itemGroup = el("div", "class-loadout-group");
+            const itemItems = el("div", "class-loadout-items");
+            (option.inventory.length ? option.inventory : ["없음"]).forEach((text) => itemItems.append(el("span", "class-loadout-item", text)));
+            itemGroup.append(el("span", "class-section-label", "소지품"), itemItems);
+            loadout.append(skillGroup, itemGroup);
+
+            body.append(
+              heading,
+              el("p", "class-tagline", option.tagline),
+              trait,
+              loadout,
+              el("span", "class-select-cta", "이 생존자로 시작")
             );
+            node.append(body);
           } else {
             node.append(el("strong", "", option.title), el("p", "", option.text));
           }
           content.append(node);
         });
-        footer.textContent = "클릭하여 선택";
+        footer.textContent = classScreen ? "" : "클릭하여 선택";
       }
 
       root.append(content, footer);
@@ -2438,7 +2477,7 @@ const displayFont = (() => {
       const threat = el("h2", "coin-title", coinData.title);
       threat.id = "modalTitle";
       const description = coinData.title === "실린더가 돈다" ? "이번엔 총알이 나갈까?" : coinData.description;
-      root.append(threat, el("p", "coin-description", description));
+      root.append(threat, el("p", "sr-only", description));
 
       const layout = el("div", "coin-layout");
       const space = el("div", "coin-space");
@@ -2463,10 +2502,10 @@ const displayFont = (() => {
       const controls = el("div", "row");
 
       if (coinData.result) {
-        controls.append(button("계속 · Space", finishCoin, "button primary"));
+        controls.append(button("계속", finishCoin, "button primary"));
       } else {
-        const heads = button("앞", () => tossCoin("heads"), "coin-choice heads-choice");
-        const tails = button("뒤", () => tossCoin("tails"), "coin-choice tails-choice");
+        const heads = button("HEADS", () => tossCoin("heads"), "coin-choice heads-choice");
+        const tails = button("TAILS", () => tossCoin("tails"), "coin-choice tails-choice");
         heads.setAttribute("aria-label", `앞면. 성공 시 ${coinData.success}. 실패 시 ${coinData.failure}.`);
         tails.setAttribute("aria-label", `뒷면. 성공 시 ${coinData.success}. 실패 시 ${coinData.failure}.`);
         heads.disabled = coinData.spinning;
@@ -2474,7 +2513,12 @@ const displayFont = (() => {
         controls.append(heads, tails);
       }
 
-      const stakes = el("p", "coin-stakes", `성공 · ${coinData.success} / 실패 · ${coinData.failure}`);
+      const stakes = el("div", "coin-stakes");
+      for (const [name, text] of [["성공", coinData.success], ["실패", coinData.failure]]) {
+        const line = el("div", "coin-stake-line");
+        line.append(el("strong", "", name), el("span", "", text));
+        stakes.append(line);
+      }
       details.append(result, stakes, controls);
       coinData.view = { coin, result, stakes, controls };
       layout.append(space, details);
@@ -2488,8 +2532,7 @@ const displayFont = (() => {
       data.spinning = true;
       const { coin, result: label, stakes, controls } = data.view;
       controls.querySelectorAll("button").forEach(b => { b.disabled = true; });
-      const choice = chosen === "heads" ? "앞면" : "뒷면";
-      label.textContent = choice + " 선택 · 동전을 던집니다…";
+      label.textContent = "…";
 
       const bytes = new Uint8Array(1);
       const result = globalThis.crypto?.getRandomValues
@@ -2528,9 +2571,9 @@ const displayFont = (() => {
       data.result = result;
       data.won = result === chosen;
       addLog(`동전 ${result === "heads" ? "앞면" : "뒷면"} · ${data.won ? "성공" : "실패"}.`);
-      label.textContent = (result === "heads" ? "앞면" : "뒷면") + " · " + (data.won ? "성공" : "실패");
-      stakes.textContent = choice + " 선택 · " + (data.won ? data.success : data.failure);
-      controls.replaceChildren(button("계속 · Space", finishCoin, "button primary"));
+      label.textContent = (result === "heads" ? "HEADS" : "TAILS") + " · " + (data.won ? "성공" : "실패");
+      stakes.textContent = data.won ? data.success : data.failure;
+      controls.replaceChildren(button("계속", finishCoin, "button primary"));
       controls.querySelector("button").focus({ preventScroll: true });
     }
 

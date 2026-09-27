@@ -6,8 +6,14 @@
 - Escape always returns to the immediately preceding preparation screen when that screen opened the current view.
 - Combat information should use image icons and numbers before explanatory text; emoji are not production UI assets.
 - The battlefield is the primary screen. Hand cards and combat HUD float over it rather than living in separate boxed rows.
+- Canonical visual QA is always performed at 1920×1080 and 100% browser zoom. Smaller viewports are secondary responsive checks, never the acceptance viewport.
+- Default surfaces retain only information needed for the current decision. Rule explanations, sources, flavour, and edge cases live in the codex or hover/focus disclosure.
+- Reuse shared SVG icons for recurring concepts. Do not duplicate the same meaning as a full label when icon plus value is sufficient.
 
 ## Presentation hierarchy
+
+- Visual language: near-black negative space, thin worn-metal rectangular frames, bone-grey text, restrained oxblood selection, desaturated art, and serif display type. Avoid glossy modern cards, large rounded panels, pill controls, and bright gold fills.
+- Reference imagery informs presentation only. Do not copy its party systems, mind gauges, resistances, formation mechanics, or menu structure into game rules.
 
 - Resting hand cards show illustration, name, cost, and effect icons with numbers; rarity reads from the border, not a printed mark. Hover, keyboard focus, or selection lifts the card and reveals complete effect text and its source.
 - Combat effect numbers come from content definitions and rule calculations. Conditional coin effects, delayed effects, ammo costs, noise, and exhaust retain distinct visible markers; they are not removed merely to shorten a card.

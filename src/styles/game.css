@@ -1726,19 +1726,28 @@
     }
   
 
-.coin-title { margin: 0 0 10px; color: #e7cca0; }
+.coin-title { margin: 0; color: #f4e9d7; font-size: 24px; line-height: 1.35; }
 .coin-description, .coin-stakes { color: #baa99a; font-size: 13px; line-height: 1.7; }
-.coin-stakes { min-height: 44px; }
+.coin-modal .coin-layout { padding-top: 10px; }
+.coin-details { width: 100%; max-width: 400px; }
+.coin-stakes { min-height: 44px; margin: 0 0 20px; color: #e0d7cb; font-size: 16px; line-height: 1.6; text-align: left; }
+.coin-stake-line { display: grid; grid-template-columns: 2.5em 1fr; gap: 12px; padding: 3px 0; }
+.coin-stake-line strong { color: #f5e5bc; font-weight: 700; }
+.coin-stake-line:last-child strong { color: #f1a79f; }
+.coin-details .row { gap: 12px; }
+.coin-modal .coin-result { font: 700 26px/1.4 var(--font-display); letter-spacing: .5px; margin: 0 0 16px; }
 .coin-choice:disabled { opacity: .45; cursor: wait; }
 
 /* A dark stage keeps the toss silhouette and final face readable. */
 .coin-space { width: 100%; isolation: isolate; background: radial-gradient(ellipse at 50% 65%, #c7a16412, transparent 62%); }
 .coin-space::after { z-index: -1; transition: opacity .2s; }
-.coin { filter: drop-shadow(0 5px 7px #0009); }
-.coin-face { filter: sepia(.18) contrast(1.12); }
+/* Filters on the 3D parent flatten its faces and break backface visibility. */
+.coin { filter: none; }
+.coin-face { filter: sepia(.18) contrast(1.12) drop-shadow(0 5px 7px #0009); }
+.coin-choice { display: grid; justify-items: center; gap: 8px; min-width: 120px; color: #fff0d4; font-size: 18px; font-weight: 700; letter-spacing: 1px; }
 .coin-choice.chosen:disabled { opacity: 1; color: #ffe0a3; border-color: #d9b777; box-shadow: inset 0 0 16px #b38b3820; }
 .coin-space.tossing::after { animation: coin-shadow 1.9s linear both; }
-.coin.landed { filter: drop-shadow(0 0 13px #d7b67255); }
+.coin.landed .coin-face { filter: sepia(.18) contrast(1.12) drop-shadow(0 0 13px #d7b67255); }
 .coin-result.coin-success { color: #e8d397; }
 .coin-result.coin-failure { color: #df8981; }
 .coin-result { min-height: 28px; }
