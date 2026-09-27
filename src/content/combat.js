@@ -180,13 +180,13 @@ export const CARDS = {
       // ── 추가 무기 카드 ──
       slash: {
         name: "넓게 베기", rarity: "uncommon", cost: 1, type: "attack", target: "all",
-        damage: (u) => u ? 9 : 6,
-        text: (u, p = 0) => `모든 적에게 피해 ${Math.max(0, (u ? 9 : 6) + p)}.\n마체테 장비 카드.`
+        damage: (u) => u ? 11 : 8,
+        text: (u, p = 0) => `모든 적에게 피해 ${Math.max(0, (u ? 11 : 8) + p)}.\n마체테 장비 카드.`
       },
       hamstring: {
         name: "오금 베기", rarity: "uncommon", cost: 1, type: "attack", target: "single",
-        damage: (u) => u ? 7 : 5, limbBonus: (u) => u ? 7 : 5,
-        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 7 : 5) + p)}.\n사지를 노리면 피해 ${u ? 7 : 5} 추가.`
+        damage: (u) => u ? 10 : 8, limbBonus: (u) => u ? 8 : 6,
+        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 10 : 8) + p)}.\n사지를 노리면 피해 ${u ? 8 : 6} 추가.`
       },
       thrust: {
         name: "연속 찌르기", rarity: "uncommon", cost: 2, type: "attack", target: "single",
