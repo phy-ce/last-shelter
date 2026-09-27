@@ -15,6 +15,8 @@ const files = {
   hit: [S('hit')],
   blockHit: [S('block-hit')],
   cardDrop: [S('card')],
+  turnEnd: [S('turn')],
+  inventoryMove: [S('inventory')],
   flashbang: [S('flashbang')],
   glass: [S('glass')],
   heal: [S('heal')],
@@ -23,6 +25,7 @@ const files = {
   quiet: [S('quiet')],
   search: [S('search')],
   playerInjury: [],
+  playerPain: [S('death-scream')],
   playerDeath: [S('death-body')],
   zombieDeath: [],
 }
@@ -103,10 +106,12 @@ export const Samples = {
       const audio = acquire(src)
       audio.pause()
       audio.currentTime = 0
-      const darkVoice = ['playerInjury', 'playerDeath', 'zombieDeath'].includes(key)
-      const peak = Math.min(1, settings.volume / 100 * (darkVoice ? (index ? .13 : key === 'zombieDeath' ? .4 : .48) : key === 'shotgun' ? .42 : index ? .19 : .3))
+      const darkVoice = ['playerInjury', 'playerPain', 'playerDeath', 'zombieDeath'].includes(key)
+      const voiceLevel = key === 'playerPain' ? .26 : index ? .13 : key === 'zombieDeath' ? .4 : .48
+      const peak = Math.min(1, settings.volume / 100 * (darkVoice ? voiceLevel : key === 'shotgun' ? .42 : index ? .19 : .3))
       audio.volume = peak
-      audio.playbackRate = key === 'zombieDeath' ? .96 + Math.random() * .06 : darkVoice ? .82 + Math.random() * .08 : key === 'knife' ? .96 + Math.random() * .05 : .88 + Math.random() * .07
+      const naturalRate = ['guard', 'blockHit', 'cardDrop', 'turnEnd', 'inventoryMove'].includes(key)
+      audio.playbackRate = naturalRate ? 1 : key === 'playerPain' ? .92 + Math.random() * .05 : key === 'zombieDeath' ? .96 + Math.random() * .06 : darkVoice ? .82 + Math.random() * .08 : key === 'knife' ? .96 + Math.random() * .05 : .88 + Math.random() * .07
       if (darkVoice && index === 0) fadeVoice(audio, peak)
       void audio.play().catch(() => {})
     }

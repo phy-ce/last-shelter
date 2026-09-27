@@ -141,7 +141,7 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
   padding: 3px 6px;
   overflow: hidden;
   color: #d9d1c2;
-  font: 700 11px/1.2 var(--font-body);
+  font: 800 15px/1.2 var(--font-body);
   letter-spacing: .05em;
   text-align: center;
   text-overflow: ellipsis;
@@ -232,6 +232,8 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 
 /* Slay-the-Spire-style status language: one compact row per combatant. */
 .status-stack {
+  --status-token-size: 40px;
+  --status-icon-size: 35px;
   position: absolute;
   z-index: 7;
   display: flex;
@@ -245,7 +247,7 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .enemy-group > .status-stack {
   position: absolute;
   left: 50%;
-  top: calc(var(--enemy-name-top, 270px) + 24px);
+  top: calc(var(--enemy-name-top, 270px) + 28px);
   width: 100%;
   max-width: none;
   margin: 0;
@@ -255,9 +257,9 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
   --status-color: #b9b2a5;
   position: relative;
   display: grid;
-  flex: 0 0 34px;
-  width: 34px;
-  height: 34px;
+  flex: 0 0 var(--status-token-size);
+  width: var(--status-token-size);
+  height: var(--status-token-size);
   min-height: 0;
   place-items: center;
   padding: 0;
@@ -269,7 +271,7 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
   box-shadow: none;
   transition: translate 120ms ease, border-color 120ms ease, filter 120ms ease;
 }
-.status-token .hud-icon { width: 29px; height: 29px; filter: drop-shadow(0 2px 3px #000) drop-shadow(0 0 4px #000); }
+.status-token .hud-icon { width: var(--status-icon-size); height: var(--status-icon-size); filter: drop-shadow(0 2px 3px #000) drop-shadow(0 0 4px #000); }
 .status-token .status-value {
   position: absolute;
   right: -4px;
@@ -567,4 +569,16 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
   .hand { bottom: -98px; }
   .hand-slot:hover .card:not(:disabled), .hand .card:focus-visible:not(:disabled), .hand .card.selected { transform: translateY(-132px) rotate(0deg) scale(1.03); }
 }
+
+/* A chosen card becomes an aiming token, not a persistent full-card preview. Keep it below
+   enemy legs and let limb hit targets win when the two layers approach each other. */
+.hand.has-selection .card.selected {
+  height: 230px;
+  transform: translateY(-18px) rotate(0deg) scale(1.025);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--rarity, #b9b2a5), white 18%), 0 0 18px color-mix(in srgb, var(--rarity, #b9b2a5), transparent 76%), 0 14px 34px #000c;
+}
+.hand.has-selection .card.selected .card-summary { display: block; }
+.hand.has-selection .card.selected .card-detail { display: none; }
+.scene:has(.hand.has-selection) .targets { z-index: 9; }
+
 @media (prefers-reduced-motion: reduce) { .health-track::before { transition: none; } }

@@ -368,13 +368,14 @@ export const ENEMY_TYPES = {
 
 // 추가 적의 행동 패턴. 턴마다 순서대로 순환한다.
 //   attack: damage · hits 연타 · infection 감염 · grab 붙잡기(다음 턴 드로우 −1)
-//   guard: 방어도 / scream: 소음 증가 / regen: 체력 회복
+//   guard: 방어도 / scream: 소음 증가 / regen: 체력 회복 / summon: 다른 적 1마리를 불러낸다(최대 적 수를 넘지 않을 때만)
 // 부위가 파괴되면 `broken` 패턴으로 바뀐다.
 export const ENEMY_PATTERNS = {
       shrieker: {
         cycle: [
           { type: "scream", noise: 3 },
           { type: "attack", damage: 4 },
+          { type: "summon", summon: "crawler" },
           { type: "attack", damage: 4 }
         ]
       },

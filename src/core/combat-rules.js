@@ -345,6 +345,7 @@ function patternIntent(state, enemy, step) {
   const base = { damage: 0, hits: 0, infection: 0, coin: false, limb: null }
   if (step.type === 'attack') return { ...base, type: 'attack', damage: step.damage + bonus + (enemy.strength || 0), hits: step.hits || 1, infection: step.infection || 0, grab: Boolean(step.grab) }
   if (step.type === 'guard') return { ...base, type: 'guard', block: step.block + bonus }
+  if (step.type === 'summon') return { ...base, type: 'summon', summon: step.summon }
   return { ...base, type: step.type, noise: step.noise || 0, heal: step.heal || 0 }
 }
 
@@ -365,8 +366,9 @@ export function setIntent(state, enemy) {
     const broken = pattern.part && partBroken(enemy, pattern.part.key)
     const cycle = broken && pattern.broken ? pattern.broken : pattern.cycle
     let step = cycle[(state.turn - 1) % cycle.length]
-    // 다친 데가 없으면 재생 대신 공격한다.
+    // 다친 데가 없으면 재생 대신, 적이 이미 가득하면 소환 대신 공격한다.
     if (step.type === 'regen' && enemy.hp >= enemy.maxHp) step = cycle.find(s => s.type === 'attack') || step
+    if (step.type === 'summon' && state.enemies.length >= MAX_ENEMIES) step = cycle.find(s => s.type === 'attack') || step
     enemy.intent = patternIntent(state, enemy, step)
     return
   }
@@ -385,13 +387,16 @@ export function setIntent(state, enemy) {
   }
   if (enemy.type === 'boss') {
     const armBroken = partBroken(enemy, 'arm')
+    const summon = () => ({ type: 'summon', summon: 'walker', damage: 0, hits: 0, infection: 0, coin: false, limb: null })
     enemy.intent = [
       attack(7, 2),
       attack(10, 1, 3),
       // 복합 의도: 방어하면서 힘을 모은다.
       armBroken ? guard(12) : { ...guard(12), charge: true },
       !armBroken && enemy.primed ? attack(23, 1, 0, true) : attack(10),
-    ][(state.turn - 1) % 4]
+      // 문 안에서 배회자를 하나 더 내보낸다. 적이 가득하면 대신 연타.
+      state.enemies.length < MAX_ENEMIES ? summon() : attack(7, 2),
+    ][(state.turn - 1) % 5]
     if (partBroken(enemy, 'leg')) enemy.intent.damage = Math.max(0, enemy.intent.damage - 3)
   }
 }
@@ -440,6 +445,7 @@ function intentLabelBase(i, compact = false) {
   if (i.type === 'stagger') return '경직 · 행동 없음'
   if (i.type === 'scream') return `울부짖기 · 소음 +${i.noise}`
   if (i.type === 'regen') return `재생 · 체력 +${i.heal}`
+  if (i.type === 'summon') return `소환 · ${ENEMY_TYPES[i.summon]?.name || '적'} 합류`
   if (i.grab) return `${compact ? '' : '공격 '}${i.damage} · 붙잡기(다음 턴 드로우 −1)`
   if (i.coin) return `동전 ${i.damage}${i.limb ? ` / ${limbName(i.limb)}` : ''}`
   return `${compact ? '' : '공격 '}${i.damage}${i.hits > 1 ? `×${i.hits}` : ''}${i.infection ? ` · 감염 ${i.infection}` : ''}`
@@ -875,6 +881,16 @@ export function resolveNonAttack(state, enemy, intent, events = []) {
   if (intent.type === 'scream') {
     state.noise += intent.noise
     emit(state, events, 'enemy-scream', { enemy, noise: intent.noise }, `${enemy.name}가 울부짖는다 · 소음 ${intent.noise} 증가.`)
+    return true
+  }
+  if (intent.type === 'summon') {
+    if (state.enemies.length >= MAX_ENEMIES) {
+      log(state, events, `${enemy.name}가 불렀지만 더 올 자리가 없다.`)
+      return true
+    }
+    const summoned = makeEnemy(state, intent.summon)
+    state.enemies.push(summoned)
+    emit(state, events, 'enemy-summon', { enemy, summoned }, `${enemy.name}가 ${summoned.name}를 불러냈다.`)
     return true
   }
   if (intent.type === 'regen') {

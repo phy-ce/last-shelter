@@ -21,12 +21,14 @@ Each file was trimmed, faded, converted to mono and peak-normalized to −1 dBFS
 | axe-chop | Timothy McHugh – Gorification / large metal blade wet stab slash hard 1 |
 | axe-bone | Coll Anderson – Gore / GORE Chop 02 C |
 | hit | Timothy McHugh – Gorification / wood beating flesh wet blood splat medium 11 |
-| guard | Coll Anderson – Metal Plate / Metal plate bang 01 B |
-| block-hit | Coll Anderson – Car Destruction / Metal Impact Smash Move 07 B |
+| guard | Timothy McHugh – Gorification / large metal knife muted ring 13 |
+| block-hit | RDGSFX008 – The Metal Shelf / Metal Shelf Hit 02 |
 | flare | Membrans – Firecrackers / Whistling Firecracker 08 |
 | flashbang | Membrans – Firecrackers / Firecracker, Medium Distance 07 |
 | glass | Soundopolis – Glass Smash / Glass_Break_BeerBottle 002 |
 | card | TheLibrarybyEmptySea – UI1 / GlassTicks 25 |
+| turn | TheLibrarybyEmptySea – Gateway Part1 / hotel door metal deadbolt unlock 02 |
+| inventory | Eiravaein Works – Vaeyan II / leather bracelet adjusting |
 | reward | Kpow Sounds – UI Soundpacks / UI_SoundPack8_Select_v2 |
 | heal | Mechanical Wave – Foley Session 01 / Zipper Case 02 |
 | focus | Mechanical Wave – Hits Whoosh / Action Swirl Whoosh 04 |

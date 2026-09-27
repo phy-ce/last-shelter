@@ -692,6 +692,7 @@ const displayFont = (() => {
       injuryTimer = setTimeout(() => banner.classList.remove("active"), 1700);
 
       Sound.play("playerInjury");
+      Sound.play("playerPain");
     }
 
     function drawFigure(enemy, x, y, scale, time, alpha = 1) {
@@ -1225,6 +1226,8 @@ const displayFont = (() => {
           }
           case "enemy-buff": // 로그만. 연출은 프레젠테이션 쪽에서 채운다.
             break;
+          case "enemy-summon": // 로그만. 합류 연출은 프레젠테이션 쪽에서 채운다.
+            break;
           case "enemy-regen": {
             const p = enemyPosition(ev.enemy);
             floatText(p.x, p.y - 170 * p.scale, `+${ev.healed}`, "#9ad19a");
@@ -1668,7 +1671,7 @@ const displayFont = (() => {
           node.style.setProperty("--discard-delay", `${index * 22}ms`);
           node.classList.add("discarding");
         });
-        Sound.play("cardDrop");
+        Sound.play("turnEnd");
         await wait(Math.min(320, 180 + state.hand.length * 22));
         if (version !== gameVersion) return;
       }
@@ -2427,7 +2430,8 @@ const displayFont = (() => {
       root.className = "modal coin-modal";
       const threat = el("h2", "coin-title", coinData.title);
       threat.id = "modalTitle";
-      root.append(threat, el("p", "coin-description", coinData.description));
+      const description = coinData.title === "실린더가 돈다" ? "이번엔 총알이 나갈까?" : coinData.description;
+      root.append(threat, el("p", "coin-description", description));
 
       const layout = el("div", "coin-layout");
       const space = el("div", "coin-space");
@@ -2684,7 +2688,7 @@ const displayFont = (() => {
       }
       if (!ok) { notify("거기엔 놓을 수 없다."); renderModal(); return; }
       present(events);
-      Sound.play("cardDrop");
+      Sound.play("inventoryMove");
       renderModal();
     }
 
@@ -2702,7 +2706,7 @@ const displayFont = (() => {
         rules.equip(state, item.uid, slot, events);
       }
       present(events);
-      Sound.play("cardDrop");
+      Sound.play("inventoryMove");
       renderModal();
     }
 
@@ -2714,6 +2718,7 @@ const displayFont = (() => {
       else rules.discardItem(state, item.uid, events);
       bagSelected = null;
       present(events);
+      Sound.play("inventoryMove");
       renderModal();
     }
 
@@ -3085,7 +3090,7 @@ const displayFont = (() => {
       if (modal) return;
       const root = $("tooltip");
       root.className = "tooltip";
-      root.replaceChildren(el("strong", "", title), el("div", "", text));
+      root.replaceChildren(...(title ? [el("strong", "", title)] : []), el("div", "", text));
       root.hidden = false;
       root.style.left = "8px";
       root.style.top = "8px";
@@ -3588,7 +3593,7 @@ const displayFont = (() => {
         const intent = el("span", `enemy-intent${enemy.intent?.coin && !rules.intentsHidden(state) ? " lethal" : ""}`);
         let intentIcon;
         const intentType = rules.intentsHidden(state) && enemy.intent ? "hidden" : enemy.intent?.type;
-        const intentSymbol = { hidden: "hidden", guard: "shield", regen: "heal", charge: "energy", scream: "noise", stagger: "stagger" }[intentType] || "attack";
+        const intentSymbol = { hidden: "hidden", guard: "shield", regen: "heal", charge: "energy", scream: "noise", stagger: "stagger", summon: "body" }[intentType] || "attack";
         const intentArt = !rules.intentsHidden(state) && INTENT_ICONS[intentType];
         intentIcon = intentArt ? el("img", "") : uiIcon(intentSymbol);
         if (intentArt) {
@@ -3601,6 +3606,7 @@ const displayFont = (() => {
           : intentType === "guard" ? enemy.intent.block
           : intentType === "stagger" ? ""
             : intentType === "scream" ? `+${enemy.intent.noise}`
+            : intentType === "summon" ? "+1"
               : intentType === "regen" ? `+${enemy.intent.heal}`
               : intentType === "buff" ? `+${enemy.intent.strength}`
                 : enemy.intent?.damage ? `${enemy.intent.damage}${enemy.intent.hits > 1 ? `×${enemy.intent.hits}` : ""}` : "…";
@@ -3647,7 +3653,7 @@ const displayFont = (() => {
         target.addEventListener("pointerenter", () => {
           hoverAim = { enemyId: enemy.id, partKey: null };
           if (selectedCard()) updatePreview();
-          else tooltip(enemy.name, rules.intentsHidden(state) ? "다음 행동 알 수 없음" : intentLabel(enemy), target);
+          else tooltip("", rules.intentsHidden(state) ? "다음 행동 알 수 없음" : intentLabel(enemy), target);
         });
         target.addEventListener("focus", () => {
           hoverAim = { enemyId: enemy.id, partKey: null };

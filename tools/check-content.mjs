@@ -36,11 +36,12 @@ for (const [key, pattern] of Object.entries(ENEMY_PATTERNS)) {
   assert.ok(pattern.cycle?.length, `${key}: pattern needs a cycle`)
   if (pattern.broken) assert.ok(pattern.part, `${key}: broken pattern needs a part`)
   for (const step of [...pattern.cycle, ...(pattern.broken ?? [])]) {
-    assert.ok(['attack', 'guard', 'charge', 'scream', 'regen'].includes(step.type), `${key}: unknown step ${step.type}`)
+    assert.ok(['attack', 'guard', 'charge', 'scream', 'regen', 'summon'].includes(step.type), `${key}: unknown step ${step.type}`)
     if (step.type === 'attack') assert.ok(step.damage > 0, `${key}: attack needs damage`)
     if (step.type === 'guard') assert.ok(step.block > 0, `${key}: guard needs block`)
     if (step.type === 'scream') assert.ok(step.noise > 0, `${key}: scream needs noise`)
     if (step.type === 'regen') assert.ok(step.heal > 0, `${key}: regen needs heal`)
+    if (step.type === 'summon') assert.ok(ENEMY_TYPES[step.summon] && step.summon !== key, `${key}: summon needs another enemy type`)
   }
   if (pattern.part) assert.ok(['arm', 'leg'].includes(pattern.part.key), `${key}: part must be arm or leg`)
 }
