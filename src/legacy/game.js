@@ -2047,7 +2047,7 @@ const displayFont = (() => {
         content.append(itemSection, cardSection);
         footer.textContent = "C / Esc 닫기";
       } else if (m.type === "deck" || m.type === "upgrade") {
-        const cards = m.type === "upgrade" ? state.deck.filter((c) => !c.upgraded) : m.cards || state.deck;
+        const cards = m.type === "upgrade" ? state.deck.filter((c) => rules.isUpgradable(state, c)) : m.cards || state.deck;
         content.className = "deck-grid";
         content.id = "deckRail";
         content.setAttribute("aria-label", "카드 목록. 위아래로 스크롤합니다.");
@@ -2062,19 +2062,58 @@ const displayFont = (() => {
             groups.set(key, group);
           }
           entries.push(...groups.values());
+        } else if (m.type === "upgrade") {
+          const groups = new Map();
+          for (const card of cards) {
+            const key = card.sourceItem != null ? `item:${card.sourceItem}` : `skill:${card.id}`;
+            const group = groups.get(key) || { card, count: 0, bundle: [], item: card.sourceItem != null ? sourceItem(card) : null };
+            group.count++;
+            group.bundle.push(card);
+            groups.set(key, group);
+          }
+          entries.push(...groups.values());
         } else {
           entries.push(...cards.map((card) => ({ card, count: 1 })));
         }
 
-        for (const { card, count } of entries) {
+        for (const { card, count, bundle = [card], item = null } of entries) {
           const action = m.type === "upgrade" ? () => {
-            m.selectedId = card.id;
+            m.selectedIds = nextUpgradeSelection(m.selectedIds || [], card, item != null);
             renderModal();
           } : null;
           if (m.type === "upgrade") {
+            if (item) {
+              const itemData = itemDef(item.key);
+              const node = button("", action, `upgrade-bundle rarity-${itemData.rarity}`);
+              node.dataset.upgradeId = card.id;
+              node.classList.toggle("upgrade-selected", (m.selectedIds || []).includes(card.id));
+              const heading = el("div", "upgrade-bundle-heading");
+              heading.append(
+                el("span", "upgrade-kind", "장비 강화"),
+                el("strong", "", itemData.name),
+                el("small", "", `카드 ${bundle.length}장 동시 강화`)
+              );
+              const rows = el("div", "upgrade-bundle-cards");
+              for (const bundledCard of bundle) {
+                const upgradedCard = { ...bundledCard, upgraded: true };
+                const row = el("div", "upgrade-skill-row");
+                row.append(
+                  el("strong", "", CARDS[bundledCard.key].name),
+                  el("span", "before", summary(bundledCard, false)),
+                  el("b", "upgrade-arrow", "→"),
+                  el("span", "after", summary(upgradedCard, false))
+                );
+                rows.append(row);
+              }
+              node.append(heading, rows);
+              content.append(node);
+              continue;
+            }
             const node = modalCard(card, action);
+            node.classList.add("upgrade-skill-card");
+            node.querySelector(".content").prepend(el("span", "upgrade-kind", `스킬 ${rules.skillUpgradeCount(state)}장 강화`));
             node.dataset.upgradeId = card.id;
-            node.classList.toggle("upgrade-selected", m.selectedId === card.id);
+            node.classList.toggle("upgrade-selected", (m.selectedIds || []).includes(card.id));
             const showComparison = () => {
               document.querySelector(".upgrade-side-preview")?.remove();
               content.classList.add("upgrade-previewing");
@@ -2082,7 +2121,7 @@ const displayFont = (() => {
               const preview = el("aside", `upgrade-side-preview rarity-${rarityOf(card)}`);
               appendArt(preview, card.key);
               const copy = el("div", "content");
-              copy.append(el("span", "compare-label improved", "강화 후"), el("strong", "", `${CARDS[card.key].name}+ · ${CARDS[card.key].cost} AP`), el("p", "", CARDS[card.key].text(true, 0)));
+              copy.append(el("span", "compare-label improved", "강화 후"), el("strong", "", `${CARDS[card.key].name}+ · ${CARDS[card.key].cost} AP`), el("p", "", summary({ ...card, upgraded: true }, false)));
               preview.append(copy);
               document.body.append(preview);
               const rect = node.getBoundingClientRect();
@@ -2118,18 +2157,26 @@ const displayFont = (() => {
           ...(m.backToInventory ? [button(`${m.backLabel || "장비와 물자로"} · Esc`, m.backToInventory, "button primary")] : [])
         );
         if (m.type === "upgrade") {
-          content.classList.toggle("upgrade-has-selection", Boolean(m.selectedId));
-          const selectedUpgrade = cards.find((card) => card.id === m.selectedId);
+          const selected = (m.selectedIds || []).map((id) => cards.find((card) => card.id === id)).filter(Boolean);
+          content.classList.toggle("upgrade-has-selection", selected.length > 0);
+          const selectedItem = selected.length ? sourceItem(selected[0]) : null;
+          const selectedBundleCount = selectedItem ? cards.filter((card) => card.sourceItem === selectedItem.uid).length : 0;
+          const skillNeed = rules.skillUpgradeCount(state);
+          const ready = rules.canConfirmUpgrade(state, selected);
           footer.append(
-            el("span", "", selectedUpgrade ? `${CARDS[selectedUpgrade.key].name} 선택됨 · 아직 적용되지 않음` : "카드를 선택한 뒤 강화 내용을 확인하세요"),
+            el("span", "", selectedItem ? `${itemDef(selectedItem.key).name} 선택됨 · 카드 ${selectedBundleCount}장 함께 강화`
+              : selected.length ? `스킬 ${selected.length}/${skillNeed} · ${selected.map((card) => CARDS[card.key].name).join(" · ")}`
+              : "장비 또는 스킬을 선택하세요"),
             button("돌아가기 · Esc", chooseRoute),
-            button("이 카드 강화", () => {
-              if (!selectedUpgrade) return;
-              present(rules.upgradeCard(state, selectedUpgrade));
-              showAcquisition(selectedUpgrade, nextStage, "강화 완료", false);
+            button(selectedItem ? "이 장비 강화" : `스킬 ${skillNeed}장 강화`, () => {
+              if (!rules.canConfirmUpgrade(state, selected)) return;
+              present(rules.upgradeSelection(state, selected));
+              // 강화 결과를 한 장씩 보여 준 뒤 한 번만 다음 구역으로 간다.
+              const reveal = (index) => showAcquisition(selected[index], index + 1 < selected.length ? () => reveal(index + 1) : nextStage, "강화 완료", false);
+              reveal(0);
             }, "button primary")
           );
-          footer.lastElementChild.disabled = !selectedUpgrade;
+          footer.lastElementChild.disabled = !ready;
         }
       } else if (m.type === "route") {
         content.className = "route-screen";
@@ -2351,8 +2398,9 @@ const displayFont = (() => {
 
       root.append(content, footer);
       root.scrollTop = 0;
-      const selectedUpgradeNode = m.type === "upgrade" && m.selectedId
-        ? root.querySelector(`[data-upgrade-id="${CSS.escape(String(m.selectedId))}"]`)
+      const lastSelectedId = m.type === "upgrade" ? (m.selectedIds || []).at(-1) : null;
+      const selectedUpgradeNode = lastSelectedId != null
+        ? root.querySelector(`[data-upgrade-id="${CSS.escape(String(lastSelectedId))}"]`)
         : null;
       (selectedUpgradeNode || root.querySelector("button:not(:disabled), [tabindex='0']"))?.focus({ preventScroll: true });
     }
@@ -2833,6 +2881,14 @@ const displayFont = (() => {
       if (modal.combatDone) { const done = modal.combatDone; closeModal(); done(); }
       else if (modal.back) modal.back();
       else chooseRoute();
+    }
+
+    // 정비소 선택: 장비는 단독 선택, 스킬은 최대 skillUpgradeCount장. 다시 누르면 해제, 넘치면 가장 오래된 것부터 뺀다.
+    function nextUpgradeSelection(ids, card, isItem) {
+      if (isItem) return ids.length === 1 && ids[0] === card.id ? [] : [card.id];
+      const skills = ids.filter((id) => state.deck.some((c) => c.id === id && c.sourceItem == null));
+      if (skills.includes(card.id)) return skills.filter((id) => id !== card.id);
+      return [...skills, card.id].slice(-rules.skillUpgradeCount(state));
     }
 
     function showAcquisition(card, next, title = "카드 획득", added = true) {

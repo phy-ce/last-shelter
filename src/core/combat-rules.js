@@ -1122,6 +1122,35 @@ export function upgradeCard(state, card, events = []) {
   return log(state, events, `${CARDS[card.key].name}+ 강화.`)
 }
 
+// 정비소 강화: 장비 하나(소속 카드 전체) 또는 장비에 속하지 않은 스킬 2장. 둘 중 하나만.
+export const SKILL_UPGRADE_COUNT = 2
+
+/** 정비소 후보: 아직 강화 안 됐고, 소모품 카드가 아닌 것. */
+export function isUpgradable(state, card) {
+  if (card.upgraded) return false
+  const item = sourceItem(state, card)
+  return !item || itemDef(item.key).kind !== 'consumable'
+}
+
+/** 이번 정비소에서 고를 스킬 장수. 강화 안 된 독립 스킬이 2장보다 적으면 그만큼. */
+export function skillUpgradeCount(state) {
+  return Math.min(SKILL_UPGRADE_COUNT, state.deck.filter(c => !c.upgraded && c.sourceItem == null).length)
+}
+
+/** 선택이 확정 가능한가: 장비 카드 1장, 또는 독립 스킬 정확히 skillUpgradeCount장. */
+export function canConfirmUpgrade(state, cards) {
+  if (!cards.length || cards.some(c => !isUpgradable(state, c))) return false
+  if (cards.some(c => c.sourceItem != null)) return cards.length === 1
+  return cards.length === skillUpgradeCount(state)
+}
+
+/** 정비소 확정. 조건이 안 맞으면 아무것도 하지 않는다. */
+export function upgradeSelection(state, cards, events = []) {
+  if (!canConfirmUpgrade(state, cards)) return events
+  for (const card of cards) upgradeCard(state, card, events)
+  return events
+}
+
 export const SHELTER_HEAL = 15
 export const SHELTER_CURE = 2
 export const WAREHOUSE_PENALTY = 6
@@ -1177,7 +1206,7 @@ export function heroAppearance(state) {
   return { classId: state.classId || 'survivor', injury }
 }
 
-export function canUpgradeAny(state) { return !state.deck.every(c => c.upgraded) }
+export function canUpgradeAny(state) { return state.deck.some(c => isUpgradable(state, c)) }
 export function canSearchWarehouse(state) { return state.hp > WAREHOUSE_PENALTY }
 
 export function nextStage(state) { state.stage++ }
