@@ -5,6 +5,7 @@
 //   traits.blockBonus   카드로 얻는 방어도 +N
 //   traits.hideIntents  적의 다음 행동이 보이지 않는다
 //   skillPool           낯선 생존자가 주는 스킬 후보(없으면 기본 SKILL_POOL)
+//   startUses           시작 아이템의 사용 횟수를 기본값 대신 이 값으로 { key: uses }
 
 export const CLASSES = {
   survivor: {
@@ -12,7 +13,8 @@ export const CLASSES = {
     tagline: '평범하게 시작한다. 손에 든 것이 전부다.',
     hp: 76,
     skills: [['knife', 4], ['guard', 4]],
-    inventory: ['crowbar', 'medkit'],
+    inventory: ['crowbar', 'medkit', 'magazine'],
+    startUses: { magazine: 4 }, // 시작 탄약은 반 상자
     equip: 'crowbar',
     traits: {},
   },
@@ -32,7 +34,8 @@ export const CLASSES = {
     tagline: '그것들이 무엇을 하려는지 보지 않는다. 볼 필요가 없다.',
     hp: 80,
     skills: [['knife', 4], ['guard', 4]],
-    inventory: ['crowbar', 'medkit'],
+    inventory: ['crowbar', 'medkit', 'magazine'],
+    startUses: { magazine: 4 }, // 시작 탄약은 반 상자
     equip: 'crowbar',
     traits: { attackBonus: 3, blockBonus: 2, hideIntents: true },
   },

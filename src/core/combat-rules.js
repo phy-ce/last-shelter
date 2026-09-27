@@ -75,7 +75,11 @@ export function hasFever(state) { return state.infection >= FEVER_THRESHOLD }
 
 export function createState(classId = 'survivor') {
   const cls = classDef(classId)
-  const inventory = cls.inventory.map(makeItem)
+  const inventory = cls.inventory.map(key => {
+    const item = makeItem(key)
+    if (cls.startUses?.[key] != null) item.uses = cls.startUses[key]
+    return item
+  })
   const equipItem = cls.equip ? inventory.find(item => item.key === cls.equip) : null
   const state = {
     classId,
@@ -470,6 +474,8 @@ export function startBattle(state, events = []) {
   state.selected = null
   state.deck = buildDeck(state)
   state.draw = shuffle(state.deck)
+  // 첫 전투는 구급상자 카드를 첫 손패에 넣어 준다. 드로우는 더미 끝에서 뽑는다.
+  if (state.stage === 0) state.draw.sort((a, b) => (a.key === 'heal') - (b.key === 'heal'))
   state.hand = []
   state.discard = []
   state.exhausted = []
