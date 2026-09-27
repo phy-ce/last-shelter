@@ -60,8 +60,8 @@ export const ITEMS = {
     note: '소음을 덮고 공격을 피할 틈을 만든다.', cards: ['smoke'],
   },
   grenade: {
-    name: '세열 수류탄', rarity: 'rare', kind: 'consumable', uses: 1,
-    note: '한 번뿐인 강력한 전체 공격.', cards: ['grenade'],
+    name: '세열 수류탄', rarity: 'rare', kind: 'consumable', uses: 2,
+    note: '두 번 던질 수 있는 강력한 전체 공격.', cards: ['grenade'],
   },
   adrenaline: {
     name: '아드레날린 주사', rarity: 'rare', kind: 'consumable', uses: 3,

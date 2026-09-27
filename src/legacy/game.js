@@ -1129,7 +1129,8 @@ const displayFont = (() => {
       const data = CARDS[card.key];
       const fx = skillEffects(card.key, card.upgraded);
       const parts = [];
-      if (fx.block) parts.push(`방어도 +${fx.block + rules.blockBonus(state)}`);
+      // 선택 카드(개인 정비): 방어도 또는 장비 교체 중 하나.
+      if (fx.block) parts.push(`방어도 +${fx.block + rules.blockBonus(state)}${data.choice ? " 또는 장비 교체" : ""}`);
       if (fx.heal) parts.push(`체력 +${fx.heal}`);
       if (fx.cure) parts.push(`감염 −${fx.cure}`);
       if (fx.noiseDown) parts.push(`소음 −${fx.noiseDown}`);
@@ -1141,7 +1142,7 @@ const displayFont = (() => {
       if (data.delayed) parts.unshift("예약");
       const notes = [];
       if (data.exhaust) notes.push("소멸");
-      else if (fx.block && parts.length === 1) notes.push("다음 내 턴에 소멸");
+      else if (fx.block && parts.length === 1 && !data.choice) notes.push("다음 내 턴에 소멸");
       return `${parts.join(" · ")}${notes.length ? `\n${notes.join(" · ")}` : ""}`;
     }
 
@@ -2162,7 +2163,11 @@ const displayFont = (() => {
               if (!rules.canConfirmUpgrade(state, selected)) return;
               present(rules.upgradeSelection(state, selected));
               // 강화 결과를 한 장씩 보여 준 뒤 한 번만 다음 구역으로 간다.
-              const reveal = (index) => showAcquisition(selected[index], index + 1 < selected.length ? () => reveal(index + 1) : nextStage, "강화 완료", false);
+              // 장비는 소속 카드 전부(같은 카드가 여러 장이면 한 번만).
+              const shown = selectedItem
+                ? [...new Map(state.deck.filter((card) => card.sourceItem === selectedItem.uid).map((card) => [card.key, card])).values()]
+                : selected;
+              const reveal = (index) => showAcquisition(shown[index], index + 1 < shown.length ? () => reveal(index + 1) : nextStage, "강화 완료", false);
               reveal(0);
             }, "button primary")
           );
