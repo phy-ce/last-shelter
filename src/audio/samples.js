@@ -14,13 +14,20 @@ const files = {
   flare: [S('flare')],
   hit: [S('hit')],
   blockHit: [S('block-hit')],
-  cardDrop: [S('card')],
+  cardDrop: [S('cards-gather')],
+  cardPlay: [S('skill-swish')],
+  drawCard: [S('draw-swish')],
+  gatherCards: [S('cards-gather')],
+  powerUp: [S('focus')],
+  magicCast: [S('skill-swish')],
+  magicHit: [S('hit')],
+  enemyScream: [S('zombie-3')],
   turnEnd: [S('turn')],
   inventoryMove: [S('inventory')],
   flashbang: [S('flashbang')],
   glass: [S('glass')],
   heal: [S('heal')],
-  reward: [S('reward')],
+  reward: [S('inventory')],
   focus: [S('focus')],
   quiet: [S('quiet')],
   search: [S('search')],
@@ -33,7 +40,7 @@ const files = {
 const screamVariants = {
   playerInjury: [S('injury-1'), S('injury-2'), S('injury-3')],
   playerDeath: [S('death-scream')],
-  zombieDeath: [S('zombie-1'), S('zombie-2'), S('zombie-3')],
+  zombieDeath: [S('zombie-1'), S('zombie-2')],
 }
 
 // 브라우저(특히 모바일 Chrome)는 동시에 살아 있는 미디어 엘리먼트 수를 제한한다.
@@ -106,12 +113,13 @@ export const Samples = {
       const audio = acquire(src)
       audio.pause()
       audio.currentTime = 0
-      const darkVoice = ['playerInjury', 'playerPain', 'playerDeath', 'zombieDeath'].includes(key)
-      const voiceLevel = key === 'playerPain' ? .26 : index ? .13 : key === 'zombieDeath' ? .4 : .48
-      const peak = Math.min(1, settings.volume / 100 * (darkVoice ? voiceLevel : key === 'shotgun' ? .42 : index ? .19 : .3))
+      const darkVoice = ['playerInjury', 'playerPain', 'playerDeath', 'zombieDeath', 'enemyScream'].includes(key)
+      const voiceLevel = key === 'playerPain' ? .26 : key === 'enemyScream' ? .36 : index ? .13 : key === 'zombieDeath' ? .4 : .48
+      const subtleLevel = ['cardPlay', 'drawCard', 'gatherCards'].includes(key) ? .19 : null
+      const peak = Math.min(1, settings.volume / 100 * (darkVoice ? voiceLevel : key === 'shotgun' ? .42 : subtleLevel ?? (index ? .19 : .3)))
       audio.volume = peak
-      const naturalRate = ['guard', 'blockHit', 'cardDrop', 'turnEnd', 'inventoryMove'].includes(key)
-      audio.playbackRate = naturalRate ? 1 : key === 'playerPain' ? .92 + Math.random() * .05 : key === 'zombieDeath' ? .96 + Math.random() * .06 : darkVoice ? .82 + Math.random() * .08 : key === 'knife' ? .96 + Math.random() * .05 : .88 + Math.random() * .07
+      const naturalRate = ['guard', 'blockHit', 'cardDrop', 'cardPlay', 'drawCard', 'gatherCards', 'turnEnd', 'inventoryMove'].includes(key)
+      audio.playbackRate = naturalRate ? 1 : key === 'playerPain' ? .92 + Math.random() * .05 : key === 'zombieDeath' ? .96 + Math.random() * .06 : key === 'enemyScream' ? .86 + Math.random() * .05 : darkVoice ? .82 + Math.random() * .08 : key === 'knife' ? .96 + Math.random() * .05 : .88 + Math.random() * .07
       if (darkVoice && index === 0) fadeVoice(audio, peak)
       void audio.play().catch(() => {})
     }

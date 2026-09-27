@@ -1184,6 +1184,7 @@ const displayFont = (() => {
         switch (ev.type) {
           case "draw":
             ev.cards.forEach((id) => dealtCards.add(id));
+            if (ev.cards.length) Sound.play("drawCard");
             break;
           case "enemy-block": {
             const p = enemyPosition(ev.enemy);
@@ -1221,7 +1222,7 @@ const displayFont = (() => {
           case "enemy-scream": {
             const p = enemyPosition(ev.enemy);
             floatText(p.x, p.y - 170 * p.scale, `소음 +${ev.noise}`, "#e0b8a0");
-            Sound.play("hit");
+            Sound.play("enemyScream");
             break;
           }
           case "enemy-buff": // 로그만. 연출은 프레젠테이션 쪽에서 채운다.
@@ -1299,10 +1300,11 @@ const displayFont = (() => {
           case "gamble-lose": {
             const g = geometry();
             floatText(g.heroX, g.ground - 200 * g.scale, ev.type === "gamble-win" ? "성공" : "실패", ev.type === "gamble-win" ? "#e6d39a" : "#d98c7c");
+            Sound.play(ev.type === "gamble-win" ? "cardPlay" : "gatherCards");
             break;
           }
           case "discard-hand":
-            Sound.play("cardDrop");
+            Sound.play("gatherCards");
             break;
           case "spell-queued": {
             const g = geometry();
@@ -1311,14 +1313,18 @@ const displayFont = (() => {
             break;
           }
           case "spell-resolve": {
-            Sound.play("flare");
+            Sound.play({ fireball: "flare", foresight: "drawCard" }[ev.card.key] || "magicHit");
             for (const target of ev.targets) { const p = enemyPosition(target); floatText(p.x, p.y - 200 * p.scale, `${CARDS[ev.card.key].name} 발동`, "#dfe6ff"); }
             if (!ev.targets.length) { const g = geometry(); floatText(g.heroX, g.ground - 200 * g.scale, `${CARDS[ev.card.key].name} 발동`, "#dfe6ff"); }
             if (motionOn()) shake = Math.max(shake, 6);
             break;
           }
           case "skill": {
-            if (ev.sound) Sound.play(ev.sound);
+            const cardSound = {
+              rush: "drawCard", adrenaline: "powerUp", focus: "powerUp", overdose: "powerUp",
+              allIn: "cardPlay", foresight: "magicCast", ward: "magicCast", maintenance: "inventoryMove"
+            }[ev.card?.key];
+            if (ev.sound || cardSound) Sound.play(ev.sound || cardSound);
             const g = geometry();
             if (ev.feedback) floatText(g.heroX, g.ground - 176 * g.scale, ev.feedback, "#c1bea0");
             break;
@@ -1522,6 +1528,7 @@ const displayFont = (() => {
       await Sound.unlock();
       if (version !== gameVersion) return;
       Sound.resumeWet();
+      Sound.play("cardPlay");
 
       const started = performance.now();
       const visualKeys = {
@@ -1552,7 +1559,7 @@ const displayFont = (() => {
         // 불발: 연출도 효과도 없음
       } else if (data.delayed) {
         // 예약 주문: 지금은 걸어두기만 한다. 다음 턴 시작에 resolvePending이 터뜨린다.
-        Sound.play("focus");
+        Sound.play("magicCast");
         present(rules.queueSpell(state, card, enemy, partKey));
         if (data.target === "single" && enemy) state.target = enemy.id;
       } else if (data.type === "attack") {
@@ -2227,7 +2234,7 @@ const displayFont = (() => {
               const events = [];
               const added = rules.addSkill(state, item.key, events);
               present(events);
-              Sound.play("reward");
+              Sound.play("gatherCards");
               showAcquisition(added, m.continue || chooseRoute);
             });
             content.append(node);
@@ -2235,7 +2242,7 @@ const displayFont = (() => {
           }
           const data = itemDef(item.key);
           const action = () => {
-            Sound.play("reward");
+            Sound.play("inventoryMove");
             if (!rules.canAddLoot(state, item)) {
               // 가방이 꽉 찼다. 가방 화면에서 자리를 만들거나 손에 들거나 버린다.
               showInventory(m.continue, null, null, item);
@@ -2904,7 +2911,7 @@ const displayFont = (() => {
     }
 
     function showAcquisition(card, next, title = "카드 획득", added = true) {
-      Sound.play("reward");
+      Sound.play("gatherCards");
       openModal({
         type: "acquisition",
         title,
@@ -3496,7 +3503,6 @@ const displayFont = (() => {
             const canAimLimb = Boolean(selected && data.target === "single");
             const aimedDamage = canAimLimb ? attackDamage(selected, limb.key) * hitCount(selected) : 0;
             const effectiveDamage = Math.max(0, aimedDamage - (enemy.block || 0));
-            const absorbedDamage = Math.min(enemy.block || 0, aimedDamage);
             const afterHp = Math.max(0, limb.hp - effectiveDamage);
             const node = button(
               "",
@@ -3515,12 +3521,6 @@ const displayFont = (() => {
             limbLoss.style.left = `${clamp(afterHp / limb.maxHp * 100, 0, 100)}%`;
             limbLoss.style.width = `${clamp((limb.hp - afterHp) / limb.maxHp * 100, 0, 100)}%`;
             limbBar.append(limbFill, limbLoss);
-            if (absorbedDamage > 0) {
-              const limbAbsorbed = el("i", "limb-hp-absorbed");
-              limbAbsorbed.style.right = `${clamp((limb.maxHp - limb.hp) / limb.maxHp * 100, 0, 100)}%`;
-              limbAbsorbed.style.width = `${clamp(absorbedDamage / limb.maxHp * 100, 0, 100)}%`;
-              limbBar.append(limbAbsorbed);
-            }
             partCopy.append(
               el("strong", "", limb.name),
               limbBar,
@@ -3571,7 +3571,8 @@ const displayFont = (() => {
         hpFill.style.width = `${Math.max(0, enemy.hp / enemy.maxHp * 100)}%`;
         const hpBar = el("span", "enemy-hp-bar");
         hpBar.append(hpFill);
-        if (selected && data.damage) {
+        const aimingLimb = selected && data.target === "single" && hoverAim?.enemyId === enemy.id && hoverAim.partKey;
+        if (selected && data.damage && !aimingLimb) {
           const rawDamage = attackDamage(selected) * hitCount(selected);
           const effectiveDamage = Math.max(0, rawDamage - (enemy.block || 0));
           const afterHp = Math.max(0, enemy.hp - effectiveDamage);
@@ -3580,13 +3581,6 @@ const displayFont = (() => {
           hpLoss.style.width = `${clamp((enemy.hp - afterHp) / enemy.maxHp * 100, 0, 100)}%`;
           hpLoss.title = enemy.block > 0 ? `방어도 ${Math.min(enemy.block, rawDamage)} 흡수 · 체력 피해 ${effectiveDamage}` : `체력 피해 ${effectiveDamage}`;
           hpBar.append(hpLoss);
-          const absorbedDamage = Math.min(enemy.block || 0, rawDamage);
-          if (absorbedDamage > 0) {
-            const hpAbsorbed = el("i", "enemy-hp-absorbed");
-            hpAbsorbed.style.right = `${clamp((enemy.maxHp - enemy.hp) / enemy.maxHp * 100, 0, 100)}%`;
-            hpAbsorbed.style.width = `${clamp(absorbedDamage / enemy.maxHp * 100, 0, 100)}%`;
-            hpBar.append(hpAbsorbed);
-          }
         }
         const hpReadout = el("span", "enemy-hp-readout");
         hpReadout.append(el("b", "", enemy.hp), document.createTextNode(` / ${enemy.maxHp}`));

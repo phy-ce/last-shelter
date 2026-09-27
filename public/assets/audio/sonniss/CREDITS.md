@@ -26,10 +26,11 @@ Each file was trimmed, faded, converted to mono and peak-normalized to −1 dBFS
 | flare | Membrans – Firecrackers / Whistling Firecracker 08 |
 | flashbang | Membrans – Firecrackers / Firecracker, Medium Distance 07 |
 | glass | Soundopolis – Glass Smash / Glass_Break_BeerBottle 002 |
-| card | TheLibrarybyEmptySea – UI1 / GlassTicks 25 |
+| skill-swish | Mechanical Wave – Hits Whoosh / Action Swish 02 |
+| draw-swish | Mechanical Wave – Hits Whoosh / Fast Action Swish 05 |
+| cards-gather | Sound Ex Machina – PAPER & CARDBOARD / Gathering a pile of small cards 05 |
 | turn | TheLibrarybyEmptySea – Gateway Part1 / hotel door metal deadbolt unlock 02 |
 | inventory | Eiravaein Works – Vaeyan II / leather bracelet adjusting |
-| reward | Kpow Sounds – UI Soundpacks / UI_SoundPack8_Select_v2 |
 | heal | Mechanical Wave – Foley Session 01 / Zipper Case 02 |
 | focus | Mechanical Wave – Hits Whoosh / Action Swirl Whoosh 04 |
 | quiet | Soundopolis – Foley Plus / Sizzle_Frying Pan 001 |

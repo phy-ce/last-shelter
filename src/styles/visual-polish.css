@@ -164,7 +164,6 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 }
 .enemy-hp-fill { position: absolute; inset: 0 auto 0 0; height: 100%; background: linear-gradient(90deg, #70252a, #b94b49 72%, #d16b58); box-shadow: inset 0 1px #ef9e8152; }
 .enemy-hp-loss { position: absolute; z-index: 1; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, #f2bd8766 0 3px, #ef725da8 3px 6px); box-shadow: inset 1px 0 #ffd0a7, inset -1px 0 #601a20; }
-.enemy-hp-absorbed { position: absolute; z-index: 2; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, #8ab8cd66 0 3px, #b9d7e5c2 3px 6px); box-shadow: inset 1px 0 #d9f1fb, inset -1px 0 #3b6072; }
 .enemy-hp-readout {
   position: absolute;
   z-index: 2;
@@ -222,7 +221,6 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .limb-hp-bar { position: relative; grid-column: 1 / -1; grid-row: 2; display: block; width: 100%; height: 5px; overflow: hidden; border: 1px solid #171416; background: #171115e8; }
 .limb-hp-fill { position: absolute; inset: 0 auto 0 0; height: 100%; background: linear-gradient(90deg, #77292d, #bd514d); }
 .limb-hp-loss { position: absolute; z-index: 1; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, #efb47a88 0 2px, #e56855c4 2px 4px); }
-.limb-hp-absorbed { position: absolute; z-index: 2; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, #85b4ca88 0 2px, #c1deebd1 2px 4px); }
 .part-button:is(.aimable, .is-aimed, :focus-visible) { box-shadow: inset 2px 0 #dfbd6f; background: linear-gradient(90deg, #3b3121e8, #171817a8 75%, transparent); transform: translate(-50%, -50%) scale(1.08); }
 .part-button:is(.aimable, .is-aimed, :focus-visible) .hud-icon { color: #d6b873; }
 .part-button:is(.is-aimed, :focus-visible) .part-copy small { color: #f0d89d; }
