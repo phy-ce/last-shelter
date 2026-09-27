@@ -4,6 +4,7 @@ import { uiIcon } from '../ui/icons.js'
 import { settings, motionOn, saveSettings } from '../core/settings.js'
 import { saveRun, loadRun, clearRun } from '../core/save.js'
 import { preloadArt } from '../boot/preload.js'
+import { Music } from '../audio/music.js'
 import { Sound } from '../audio/engine.js'
 import * as rules from '../core/combat-rules.js'
 import { CARDS, CARD_FLAVOR, STAGES, LIMBS, BURN_TEXT, skillEffects } from '../content/combat.js'
@@ -1142,7 +1143,6 @@ const displayFont = (() => {
       if (data.delayed) parts.unshift("예약");
       const notes = [];
       if (data.exhaust) notes.push("소멸");
-      else if (fx.block && parts.length === 1 && !data.choice) notes.push("다음 내 턴에 소멸");
       return `${parts.join(" · ")}${notes.length ? `\n${notes.join(" · ")}` : ""}`;
     }
 
@@ -1326,6 +1326,7 @@ const displayFont = (() => {
 
     // 직업 선택 → 새 게임. 세이브가 없거나 버릴 때 항상 여기서 시작한다.
     function chooseClass() {
+      Music.play("explore");
       openModal({
         type: "options",
         title: "누구로 남았는가",
@@ -1393,6 +1394,7 @@ const displayFont = (() => {
       Sound.ambience();
       state = saved.state;
       rules.setUid(saved.uid);
+      battleMusic();
       present(rules.normalizeBag(state));
       for (const enemy of state.enemies) {
         enemy.recoil = 0;
@@ -1407,7 +1409,13 @@ const displayFont = (() => {
       notify(`${STAGES[state.stage].name} · TURN ${state.turn}에서 이어합니다.`);
     }
 
+    // 구역 음악: 보스가 있으면 보스 곡, 아니면 전투 곡.
+    function battleMusic() {
+      Music.play(STAGES[state.stage].enemies.includes("boss") ? "boss" : "combat");
+    }
+
     function startBattle() {
+      battleMusic();
       present(rules.startBattle(state));
       hoverCard = null;
       hoverAim = null;
@@ -1744,6 +1752,7 @@ const displayFont = (() => {
     function checkResult() {
       const result = rules.outcome(state);
       if (result === "dead") {
+        Music.stop();
         state.phase = "over";
         state.selected = null;
         clearRun();
@@ -1762,6 +1771,7 @@ const displayFont = (() => {
       }
 
       if (result === "extracted" || result === "victory") {
+        Music.play("explore");
         state.phase = result === "extracted" ? "over" : "reward";
         state.selected = null;
         render();
@@ -1915,6 +1925,7 @@ const displayFont = (() => {
         settings.volume = Number(slider.value);
         value.textContent = `${settings.volume}%`;
         Sound.updateVolume();
+        Music.updateVolume();
         saveSettings();
       });
       label.append(slider, value);
@@ -1923,6 +1934,7 @@ const displayFont = (() => {
       const mute = button(settings.muted ? "음소거 해제" : "음소거", () => {
         settings.muted = !settings.muted;
         Sound.updateVolume();
+        Music.updateVolume();
         saveSettings();
         mute.textContent = settings.muted ? "음소거 해제" : "음소거";
         mute.setAttribute("aria-pressed", String(settings.muted));
@@ -1932,6 +1944,7 @@ const displayFont = (() => {
       content.append(volumeRow);
 
       for (const [key, name] of [
+        ["music", "배경 음악"],
         ["ambience", "폐허 환경음"],
         ["blood", "혈흔"],
         ["motion", "강한 움직임"]
@@ -1948,6 +1961,8 @@ const displayFont = (() => {
 
           if (key === "ambience") {
             Sound.ambience();
+          } else if (key === "music") {
+            Music.updateVolume();
           } else if (key === "blood") {
             figureCache.clear();
             if (!settings.blood) {
@@ -3808,6 +3823,7 @@ const displayFont = (() => {
         event.preventDefault();
         settings.muted = !settings.muted;
         Sound.updateVolume();
+        Music.updateVolume();
         saveSettings();
         notify(settings.muted ? "음소거." : "소리 켜짐.");
         if (modal?.type === "settings") renderModal();
@@ -3969,6 +3985,7 @@ const displayFont = (() => {
     }).then(boot);
 
     function boot() {
+    Music.play("explore");
     const savedRun = loadRun();
     if (savedRun) {
       openModal({

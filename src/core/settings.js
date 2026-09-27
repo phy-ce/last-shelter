@@ -5,6 +5,7 @@ const defaults = {
   volume: 72,
   muted: false,
   ambience: true,
+  music: true,
   motion: !motionPreference.matches,
   blood: true,
 }
@@ -16,7 +17,7 @@ function loadSettings() {
     const parsed = JSON.parse(raw)
     const result = {}
     if (typeof parsed.volume === 'number') result.volume = Math.max(0, Math.min(100, parsed.volume))
-    for (const key of ['muted', 'ambience', 'motion', 'blood']) {
+    for (const key of ['muted', 'ambience', 'music', 'motion', 'blood']) {
       if (typeof parsed[key] === 'boolean') result[key] = parsed[key]
     }
     return result

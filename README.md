@@ -38,3 +38,9 @@ Two AIs share this codebase; see `CLAUDE.md` / `AGENTS.md` for file ownership an
   can be placed, held or left behind. Direct card rewards are rare skill acquisitions.
 - Rarity is communicated with border and glow. Rarity names stay in accessible labels, not on the card face.
 - Card flavour text lives on the card back and is revealed by the 뒷면 chip in the deck and codex screens.
+
+## Credits
+
+Music: "Oppressive Gloom", "The Descent", "Volatile Reaction" — Kevin MacLeod (incompetech.com),
+licensed under Creative Commons: By Attribution 4.0 (http://creativecommons.org/licenses/by/4.0/).
+Details: `public/assets/audio/music/CREDITS.md`. Sound effect licenses: `public/assets/audio/cc0/LICENSES.md`.
