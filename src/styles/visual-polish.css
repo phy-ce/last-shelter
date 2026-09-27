@@ -104,7 +104,47 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .command { gap: 8px; }
 .hud-ammo { display: flex; align-items: center; gap: 8px; border: 0; background: #111316a6; padding: 8px 10px; }
 .hud-ammo .hud-icon { width: 20px; height: 24px; color: #c5b690; }
+.hud-ammo .hud-icon { transform: rotate(-38deg); }
 .hud-ammo strong { font-size: 21px; }
+.loot-hud .player-effect,
+.loot-hud .hud-ammo {
+  min-width: 82px;
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: 25px auto;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  column-gap: 7px;
+  padding: 6px 9px;
+  border-left: 1px solid #59544b;
+  border-radius: 0;
+  background: #0b0c0ccb;
+}
+.loot-hud .player-effect .hud-icon,
+.loot-hud .hud-ammo .hud-icon { width: 22px; height: 22px; grid-row: 1; }
+.loot-hud .player-effect strong,
+.loot-hud .hud-ammo strong { font-size: 19px; line-height: 1; }
+.loot-hud .loot-effect-label {
+  grid-column: 1 / -1;
+  color: #aaa397;
+  font: 10px/1.1 var(--font-body);
+  letter-spacing: .06em;
+  white-space: nowrap;
+}
+.injury-banner.depletion {
+  background: radial-gradient(ellipse, #8d6f3219 0 18%, transparent 55%);
+}
+.injury-banner.depletion strong {
+  color: #d7c59f;
+  font-size: clamp(24px, 3vw, 40px);
+  letter-spacing: .1em;
+}
+.injury-banner.depletion span {
+  border-block: 1px solid #75684e;
+  border-radius: 0;
+  background: #0b0c0ce8;
+  color: #bfb49d;
+}
 .card-pile { width: 78px; height: 104px; border-color: #a390655e; background: repeating-linear-gradient(45deg, #17191a 0 5px, #202221 6px 7px); }
 .card-pile > .hud-icon { width: 28px; height: 28px; color: #c4b080; }
 .card-pile strong { font-size: 26px; }
@@ -373,7 +413,7 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
   background: #17191b;
   box-shadow: 0 12px 28px #000d, inset 0 0 0 1px color-mix(in srgb, var(--rarity, #b9b2a5), transparent 82%);
 }
-.hand .card > img, .hand .card > canvas { height: 82px; margin-top: 34px; object-fit: cover; border: 0; opacity: .98; }
+.hand .card > img, .hand .card > canvas { height: 76px; margin-top: 42px; object-fit: cover; border: 0; opacity: .98; }
 .hand .card-body { position: relative; min-height: 112px; padding: 9px 11px 11px; background: linear-gradient(#2b2922fa, #151719); }
 .hand .card-title {
   position: absolute;
@@ -381,22 +421,27 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
   top: 0;
   left: 39px;
   right: 35px;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
   margin: 0;
-  padding: 5px 7px 6px;
-  overflow: hidden;
+  padding: 4px 5px;
+  overflow: visible;
   border: 0;
   border-bottom: 1px solid #bba16b4a;
   border-radius: 0;
   background: linear-gradient(90deg, #171715, #29271f 48%, #171715);
   box-shadow: 0 2px 7px #0009;
   color: #f2dfb9;
-  font: 700 13px/1.2 var(--font-body);
+  font: 700 12px/1.15 var(--font-body);
   letter-spacing: .01em;
   text-align: center;
-  text-overflow: ellipsis;
+  text-overflow: clip;
   text-shadow: 0 1px 2px #000;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 .hand .card-rarity { position: absolute; top: 10px; right: 8px; margin: 0; font-size: 9px; color: var(--rarity, #cab989); }
 .hand .cost { top: 7px; left: 7px; width: 27px; height: 27px; border: 1px solid #e6cb88; background: radial-gradient(circle at 35% 25%, #574b32, #22221e 75%); color: #f6dfa8; box-shadow: 0 2px 7px #000b; font-size: 15px; font-weight: 700; }
@@ -614,14 +659,38 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .class-vitality b { font: 750 18px/1 var(--font-display); }
 .class-vitality small { color: #8e8e87; font: 650 8px/1 var(--font-body); letter-spacing: .1em; }
 .class-choice p { white-space: normal; }
-.class-choice .class-tagline { min-height: 40px; margin: 7px 0 13px; color: #999b96; font: 500 11px/1.55 var(--font-body); }
-.class-section-label { display: block; margin-bottom: 5px; color: color-mix(in srgb, var(--class-accent) 74%, #c9c4b8 26%); font: 700 10px/1.1 var(--font-body); letter-spacing: .1em; }
-.class-trait { min-height: 58px; padding: 10px 0; border-block: 1px solid #aaa08026; }
-.class-trait p { margin: 0; color: #ddd6c8; font: 600 11px/1.5 var(--font-body); }
-.class-loadout { display: grid; grid-template-columns: 1.35fr 1fr; gap: 12px; padding: 11px 0 12px; }
-.class-loadout-group { min-width: 0; }
-.class-loadout-items { display: flex; flex-wrap: wrap; gap: 3px 0; color: #b4b2aa; font: 500 10px/1.45 var(--font-body); }
-.class-loadout-item:not(:last-child)::after { content: " · "; color: #656761; white-space: pre; }
+.class-hover-details { display: grid; gap: 5px; margin: 16px 0 13px; }
+.class-info-row {
+  display: grid;
+  grid-template-columns: 27px 1fr auto;
+  align-items: center;
+  min-height: 43px;
+  padding: 8px 10px;
+  overflow: hidden;
+  border-left: 1px solid #55574f;
+  background: #0e1111b8;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+.class-info-row .hud-icon { width: 17px; height: 17px; color: color-mix(in srgb, var(--class-accent) 78%, #aaa 22%); stroke-width: 1.7; }
+.class-info-label { color: #d7d1c5; font: 650 11px/1.1 var(--font-body); letter-spacing: .06em; }
+.class-info-hint { color: #6f726d; font: 650 7px/1 var(--font-body); letter-spacing: .14em; }
+.class-info-copy {
+  grid-column: 2 / -1;
+  max-height: 0;
+  margin: 0;
+  overflow: hidden;
+  opacity: 0;
+  color: #bbb7ae;
+  font: 500 10px/1.5 var(--font-body);
+  transform: translateX(-8px);
+  transition: max-height 180ms ease, margin-top 180ms ease, opacity 140ms ease, transform 180ms ease;
+}
+.class-info-row:hover,
+.class-choice:focus-visible .class-info-row { border-left-color: var(--class-accent); background: #1a1d1ce8; box-shadow: 5px 7px 16px #0007; }
+.class-info-row:hover .class-info-copy,
+.class-choice:focus-visible .class-info-copy { max-height: 72px; margin-top: 7px; opacity: 1; transform: translateX(0); }
+.class-info-row:hover .class-info-hint,
+.class-choice:focus-visible .class-info-hint { color: var(--class-accent); }
 .class-select-cta { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 11px; border-top: 1px solid #aaa08026; color: #aaa79d; font: 700 10px/1 var(--font-body); letter-spacing: .05em; }
 .class-select-cta::after { content: "→"; color: var(--class-accent); font-size: 17px; line-height: 0; transition: translate 160ms ease; }
 .class-choice:hover, .class-choice:focus-visible { border-color: color-mix(in srgb, var(--class-accent) 74%, #777 26%); background: #181b1b; box-shadow: 0 15px 38px #000a, inset 0 0 42px color-mix(in srgb, var(--class-accent) 5%, transparent); translate: 0 -3px; }

@@ -682,6 +682,7 @@ const displayFont = (() => {
       heroRecoil = motionOn() ? 1.8 : 0;
 
       const banner = $("injuryBanner");
+      banner.classList.remove("depletion");
       banner.classList.remove("active");
       banner.replaceChildren(
         el("strong", "", `${limb.name} 훼손`),
@@ -694,6 +695,24 @@ const displayFont = (() => {
 
       Sound.play("playerInjury");
       Sound.play("playerPain");
+    }
+
+    function depletionEffect(item) {
+      const data = itemDef(item.key);
+      const banner = $("injuryBanner");
+      banner.classList.remove("active");
+      banner.classList.add("depletion");
+      banner.replaceChildren(
+        el("strong", "", `${data.name} 소진`),
+        el("span", "", `사용 횟수 0/${data.uses} · 가방과 덱에서 제거됨`)
+      );
+      void banner.offsetWidth;
+      banner.classList.add("active");
+      clearTimeout(injuryTimer);
+      injuryTimer = setTimeout(() => banner.classList.remove("active"), 1700);
+      const g = geometry();
+      floatText(g.heroX, g.ground - 178 * g.scale, `${data.name} · 소진`, "#d5bd8e");
+      Sound.play("cardDrop");
     }
 
     function drawFigure(enemy, x, y, scale, time, alpha = 1) {
@@ -1284,6 +1303,9 @@ const displayFont = (() => {
           }
           case "limb-injured":
             injuryEffect(ev.limb);
+            break;
+          case "item-depleted":
+            depletionEffect(ev.item);
             break;
           case "backfire": {
             const g = geometry();
@@ -1882,12 +1904,15 @@ const displayFont = (() => {
       vitals.append(health);
       const effects = el("div", "player-effects");
       const infection = el("div", `player-effect${state.infection >= 3 ? " danger" : state.infection ? " active" : ""}`);
-      infection.append(uiIcon("infection"), el("strong", "", state.infection));
+      infection.title = "감염 수치";
+      infection.append(uiIcon("infection"), el("strong", "", state.infection), el("span", "loot-effect-label", "감염"));
       const body = el("div", `player-effect body-effect${injuredCount() ? " danger" : ""}`);
-      body.append(uiIcon("body"), el("strong", "", injuredCount()));
+      body.title = "훼손된 사지 수";
+      body.append(uiIcon("body"), el("strong", "", injuredCount()), el("span", "loot-effect-label", "사지 부상"));
       effects.append(infection, body);
       const ammo = el("div", `hud-ammo${ammoCount() < 2 ? " danger" : ""}`);
-      ammo.append(uiIcon("ammo"), el("strong", "", ammoCount()));
+      ammo.title = "보유 탄약";
+      ammo.append(uiIcon("ammo"), el("strong", "", ammoCount()), el("span", "loot-effect-label", "탄약"));
       const deck = deckAction ? button("", deckAction, "pile-summary") : el("div", "pile-summary");
       deck.append(uiIcon("cards"), el("strong", "", state.deck.length));
       hud.append(vitals, effects, ammo, deck);
@@ -2422,25 +2447,26 @@ const displayFont = (() => {
             vitality.append(uiIcon("heart"), el("b", "", option.hp), el("small", "", "HP"));
             heading.append(el("strong", "class-name", option.title), vitality);
 
-            const trait = el("div", "class-trait");
-            trait.append(el("span", "class-section-label", "고유 규칙"), el("p", "", option.trait));
-
-            const loadout = el("div", "class-loadout");
-            const skillGroup = el("div", "class-loadout-group");
-            const skillItems = el("div", "class-loadout-items");
-            option.skills.forEach((text) => skillItems.append(el("span", "class-loadout-item", text)));
-            skillGroup.append(el("span", "class-section-label", "시작 기술"), skillItems);
-            const itemGroup = el("div", "class-loadout-group");
-            const itemItems = el("div", "class-loadout-items");
-            (option.inventory.length ? option.inventory : ["없음"]).forEach((text) => itemItems.append(el("span", "class-loadout-item", text)));
-            itemGroup.append(el("span", "class-section-label", "소지품"), itemItems);
-            loadout.append(skillGroup, itemGroup);
+            const details = el("div", "class-hover-details");
+            const detailRow = (icon, label, copy) => {
+              const row = el("div", "class-info-row");
+              row.append(
+                uiIcon(icon),
+                el("strong", "class-info-label", label),
+                el("small", "class-info-hint", "HOVER"),
+                el("p", "class-info-copy", copy)
+              );
+              return row;
+            };
+            details.append(
+              detailRow("log", "고유 규칙", option.trait),
+              detailRow("cards", "시작 기술", option.skills.join(" · ")),
+              detailRow("backpack", "소지품", (option.inventory.length ? option.inventory : ["없음"]).join(" · "))
+            );
 
             body.append(
               heading,
-              el("p", "class-tagline", option.tagline),
-              trait,
-              loadout,
+              details,
               el("span", "class-select-cta", "이 생존자로 시작")
             );
             node.append(body);
@@ -2608,6 +2634,7 @@ const displayFont = (() => {
       const events = [];
       if (!rules.useMedkit(state, item, events)) return;
       present(events);
+      if (item.uses === 0) depletionEffect(item);
       Sound.play("heal");
     }
 
