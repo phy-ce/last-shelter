@@ -1,0 +1,19 @@
+{
+  "name": "last-shelter",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "node tools/check-content.mjs",
+    "audio": "node tools/generate-audio.mjs",
+    "sim": "node tools/simulate.mjs",
+    "smoke:serve": "node tools/smoke/serve.mjs",
+    "smoke": "node tools/smoke/drive.mjs"
+  },
+  "devDependencies": {
+    "vite": "^8.1.5"
+  }
+}
