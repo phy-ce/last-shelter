@@ -1,9 +1,6 @@
 # Last Shelter
 
 Originally migrated from the single-file demo `라스트셸터_사지와코인토스_사운드통합.html`.
-The one-shot migration scripts (`tools/split-demo.mjs`, `tools/modularize-demo.mjs`) are kept for
-reference only — running them would overwrite the hand-edited `index.html`, `src/legacy/game.js` and
-`src/styles/game.css`. They are no longer wired to any npm script.
 
 ## Run
 
@@ -13,7 +10,6 @@ Combat and preparation rules live in `src/core/combat-rules.js` and run without 
 `npm run sim [runs] [seed]` plays whole runs with a greedy bot and prints death-by-stage and card usage.
 `src/legacy/game.js` only orchestrates animation timing and presents rule events.
 
-Two AIs share this codebase; see `CLAUDE.md` / `AGENTS.md` for file ownership and the rules → presentation contract.
 
 ## Content rules
 

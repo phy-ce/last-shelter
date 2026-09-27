@@ -3,3 +3,17 @@ dist/
 *.log
 tmp/
 tools/smoke/out/
+
+# secrets / local tool settings
+.env
+.env.*
+.claude/
+.vscode/
+Thumbs.db
+.DS_Store
+
+# internal AI collaboration notes (kept locally, not published)
+CLAUDE.md
+AGENTS.md
+docs/CLAUDE_ART_HANDOFF.md
+docs/ART_NOTES.md
