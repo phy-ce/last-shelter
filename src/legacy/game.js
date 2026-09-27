@@ -10,7 +10,7 @@ import * as rules from '../core/combat-rules.js'
 import { CARDS, CARD_FLAVOR, STAGES, LIMBS, BURN_TEXT, skillEffects } from '../content/combat.js'
 import { ITEMS, RARITIES, itemDef, itemShape } from '../content/items.js'
 import { CLASSES, classDef } from '../content/classes.js'
-import { COMBAT_BACKGROUND, SURVIVOR, heroSprite, INFECTED, ENEMY_SPRITES, ENEMY_INJURED_SPRITES, UPGRADE_EPAULETTE, CARD_ART, COIN_HEADS, COIN_TAILS, INTENT_ICONS, EFFECT_SPRITES, assetReady } from '../art/assets.js'
+import { COMBAT_BACKGROUND, SURVIVOR, heroSprite, INFECTED, ENEMY_SPRITES, ENEMY_INJURED_SPRITES, UPGRADE_EPAULETTE, CARD_ART, COIN_HEADS, COIN_TAILS, EFFECT_SPRITES, assetReady } from '../art/assets.js'
 
 const $ = (id) => document.getElementById(id);
 // 캔버스 텍스트도 CSS와 같은 표시용 서체를 쓴다. 한 번만 읽어 두고 프레임마다 재계산하지 않는다.
@@ -559,7 +559,7 @@ const displayFont = (() => {
       const heroStack = $("statuses").querySelector(".status-stack[data-hero]");
       if (heroStack) {
         heroStack.style.left = `${g.heroX}px`;
-        heroStack.style.top = `${g.ground + 42}px`;
+        heroStack.style.top = `${g.ground + 14}px`;
       }
     }
 
@@ -1472,8 +1472,8 @@ const displayFont = (() => {
         return;
       }
 
-      if (state.energy < data.cost) {
-        notify(`행동력 부족 · 필요 ${data.cost}`);
+      if (state.energy < rules.cardCost(card)) {
+        notify(`행동력 부족 · 필요 ${rules.cardCost(card)}`);
         return;
       }
 
@@ -1891,7 +1891,7 @@ const displayFont = (() => {
       appendUpgradeMark(node, card.upgraded);
       const content = el("div", "content");
       content.append(
-        el("strong", "", `${number ? `${number}. ` : ""}${data.name}${card.upgraded ? "+" : ""} · ${data.cost} AP`),
+        el("strong", "", `${number ? `${number}. ` : ""}${data.name}${card.upgraded ? "+" : ""} · ${rules.cardCost(card)} AP`),
         el("p", "card-rules", summary(card)),
         card.sourceItem ? el("small", "item-source", `출처 · ${itemDef(sourceItem(card)?.key)?.name || "소진된 아이템"}`) : el("small", "item-source", "출처 · 스킬")
       );
@@ -2134,7 +2134,7 @@ const displayFont = (() => {
               const preview = el("aside", `upgrade-side-preview rarity-${rarityOf(card)}`);
               appendArt(preview, card.key);
               const copy = el("div", "content");
-              copy.append(el("span", "compare-label improved", "강화 후"), el("strong", "", `${CARDS[card.key].name}+ · ${CARDS[card.key].cost} AP`), el("p", "", summary({ ...card, upgraded: true }, false)));
+              copy.append(el("span", "compare-label improved", "강화 후"), el("strong", "", `${CARDS[card.key].name}+ · ${rules.cardCost({ ...card, upgraded: true })} AP`), el("p", "", summary({ ...card, upgraded: true }, false)));
               preview.append(copy);
               document.body.append(preview);
               const rect = node.getBoundingClientRect();
@@ -2221,7 +2221,7 @@ const displayFont = (() => {
         // 보상을 고르기 전에 덱과 장비를 확인할 수 있어야 한다. 두 화면 모두 이 보상 화면으로 되돌아온다.
         const backHere = () => openModal(m);
         const hud = hudStrip(() => openModal({ type: "deck", title: `생존 덱 / ${state.deck.length}장`, backToInventory: backHere, backLabel: "보상으로" }));
-        const handName = (slot) => { const item = state.inventory.find((i) => i.uid === state.equipment[slot]); return item ? itemDef(item.key).name : "빈손"; };
+        const handName = (slot) => { const item = state.inventory.find((i) => i.uid === state.equipment[slot]); return item ? rules.itemName(item) : "빈손"; };
         const hands = button("", () => showInventory(null, backHere), "pile-summary loot-hands");
         hands.append(el("span", "", "양손"), el("strong", "", `${handName("left")} · ${handName("right")}`));
         hud.append(hands);
@@ -2381,9 +2381,9 @@ const displayFont = (() => {
           if (classScreen) {
             node.classList.add("class-choice");
             const portraits = [
-              "/assets/art/survivor-class-v1.png",
-              "/assets/art/survivor-mage-v1.png",
-              "/assets/art/survivor-berserker-v1.png"
+              "/assets/art/survivor-class-v1.webp",
+              "/assets/art/survivor-mage-v1.webp",
+              "/assets/art/survivor-berserker-v1.webp"
             ];
             const portrait = el("div", "class-portrait");
             const portraitImage = el("img", "");
@@ -2496,25 +2496,34 @@ const displayFont = (() => {
         ? (crypto.getRandomValues(bytes), bytes[0] < 128 ? "heads" : "tails")
         : Math.random() < 0.5 ? "heads" : "tails";
 
+      Sound.play("coin");
+      coin.parentElement.classList.add("tossing");
+      controls.querySelector(chosen === "heads" ? ".heads-choice" : ".tails-choice")?.classList.add("chosen");
       void Sound.unlock().then(() => {
         if (coinData !== data || !data.spinning) return;
         Sound.resumeWet();
-        Sound.play("coin");
       }).catch(() => {});
       const angle = result === "heads" ? 1800 : 1980;
       const frames = motionOn() ? [
-        { transform: "translateY(0) rotateX(0deg)", offset: 0 },
-        { transform: "translateY(-65px) rotateX(" + angle * .45 + "deg)", offset: .35 },
-        { transform: "translateY(0) rotateX(" + angle + "deg)", offset: .9 },
-        { transform: "translateY(-6px) rotateX(" + angle + "deg)", offset: .95 },
-        { transform: "translateY(0) rotateX(" + angle + "deg)", offset: 1 }
+        { transform: "translateY(0) rotateX(0deg) scale(1)", offset: 0 },
+        { transform: "translateY(12px) rotateX(-25deg) scale(.94)", offset: .07 },
+        { transform: "translateY(-80px) rotateX(720deg) scale(.83)", offset: .32 },
+        { transform: "translateY(-96px) rotateX(1080deg) scale(.78)", offset: .48 },
+        { transform: "translateY(-66px) rotateX(1440deg) scale(.87)", offset: .64 },
+        { transform: "translateY(0) rotateX(" + angle + "deg) scale(1)", offset: .84 },
+        { transform: "translateY(-12px) rotateX(" + (angle + 18) + "deg) scale(1.04)", offset: .9 },
+        { transform: "translateY(0) rotateX(" + angle + "deg) scale(1)", offset: 1 }
       ] : [{ transform: "rotateX(" + angle + "deg)", opacity: .5 }, { transform: "rotateX(" + angle + "deg)", opacity: 1 }];
-      const animation = coin.animate(frames, { duration: motionOn() ? 1900 : 120, easing: "ease-out", fill: "forwards" });
+      const animation = coin.animate(frames, { duration: motionOn() ? 1900 : 120, easing: "linear", fill: "forwards" });
       await animation.finished.catch(() => {});
       coin.style.transform = "rotateX(" + (result === "heads" ? 0 : 180) + "deg)";
       animation.cancel();
       if (coinData !== data) return;
 
+      coin.parentElement.classList.remove("tossing");
+      coin.classList.add("landed");
+      Sound.play("coin");
+      label.classList.add(result === chosen ? "coin-success" : "coin-failure");
       data.spinning = false;
       data.result = result;
       data.won = result === chosen;
@@ -2587,7 +2596,9 @@ const displayFont = (() => {
         tile.style.setProperty("--x", item.pos.x);
         tile.style.setProperty("--y", item.pos.y);
       }
-      tile.append(itemArtNode(data, "bag-art"), el("span", "bag-name", data.name));
+      tile.append(itemArtNode(data, "bag-art"), el("span", "bag-name", data.kind === "resource" ? data.name : rules.itemName(item)));
+      // 강화한 장비는 카드와 같은 강화 견장을 단다.
+      if (item.upgraded) { tile.classList.add("upgraded"); appendUpgradeMark(tile, true); }
       if (item.uses != null) tile.append(el("span", "bag-uses", `×${item.uses}`));
       if (bagSelected === ref) tile.classList.add("selected");
       tile.addEventListener("pointerdown", (event) => beginBagDrag(event, m, ref));
@@ -2658,7 +2669,7 @@ const displayFont = (() => {
       }
       const data = itemDef(item.key);
       panel.append(el("strong", "", rules.itemLabel(item)));
-      if (data.cards.length) panel.append(el("p", "", data.cards.map((key) => CARDS[key].name).join(" · ")));
+      if (data.cards.length) panel.append(el("p", "", data.cards.map((key) => CARDS[key].name + (item.upgraded ? "+" : "")).join(" · ")));
       const row = el("div", "row");
       if (data.kind === "hand" && rules.canEquip(state)) {
         const slots = data.hands === 2 ? [["left", "양손 장착"]] : [["left", "왼손 장착"], ["right", "오른손 장착"]];
@@ -2936,7 +2947,7 @@ const displayFont = (() => {
         options: [
           {
             title: "은신처",
-            art: "/assets/art/route-shelter-v1.png",
+            art: "/assets/art/route-shelter-v1.webp",
             tone: "shelter",
             text: "체력 15 회복 · 감염 2 감소.\n사지 부상 1곳 치료.",
             action: () => {
@@ -2966,7 +2977,7 @@ const displayFont = (() => {
           },
           {
             title: "정비소",
-            art: "/assets/art/route-workshop-v1.png",
+            art: "/assets/art/route-workshop-v1.webp",
             tone: "workshop",
             text: "카드 1장 영구 강화.",
             disabled: !rules.canUpgradeAny(state),
@@ -2978,14 +2989,14 @@ const displayFont = (() => {
           },
           {
             title: "낯선 생존자",
-            art: "/assets/art/route-stranger-v1.png",
+            art: "/assets/art/route-stranger-v1.webp",
             tone: "stranger",
             text: "스킬 카드 3장 중 1장 획득.\n장비 없이 덱에 영구 추가.",
             action: offerSkill
           },
           {
             title: "군수 창고 · 동전",
-            art: "/assets/art/route-armory-v1.png",
+            art: "/assets/art/route-armory-v1.webp",
             tone: "armory",
             text: "성공: 장비·탄약 선택\n실패: 체력 −6",
             disabled: !rules.canSearchWarehouse(state),
@@ -3269,7 +3280,7 @@ const displayFont = (() => {
 
     function aimText(card) {
       const data = CARDS[card.key];
-      if (state.energy < data.cost) return `행동력 부족 · 필요 ${data.cost}`;
+      if (state.energy < rules.cardCost(card)) return `행동력 부족 · 필요 ${rules.cardCost(card)}`;
       if (data.target === "self") return "전투 화면을 클릭하면 사용.";
       if (data.target === "all") return "전투 화면을 클릭하면 전체 공격.";
 
@@ -3307,7 +3318,7 @@ const displayFont = (() => {
       appendArt(root, card.key);
       const content = el("div", "content");
       content.append(
-        el("div", "eyebrow", `${data.cost} AP / ${data.target === "self" ? "즉시 사용" : "대상 선택"}`),
+        el("div", "eyebrow", `${rules.cardCost(card)} AP / ${data.target === "self" ? "즉시 사용" : "대상 선택"}`),
         el("h3", "", data.name + (card.upgraded ? "+" : "")),
         el("p", "", summary(card)),
         el("p", "instruction", selected ? aimText(card) : data.target === "self" ? "카드 선택 후 전투 화면을 클릭." : "카드 선택 후 대상을 클릭.")
@@ -3587,13 +3598,18 @@ const displayFont = (() => {
         const intent = el("span", `enemy-intent${enemy.intent?.coin && !rules.intentsHidden(state) ? " lethal" : ""}`);
         let intentIcon;
         const intentType = rules.intentsHidden(state) && enemy.intent ? "hidden" : enemy.intent?.type;
-        const intentSymbol = { hidden: "hidden", guard: "shield", regen: "heal", charge: "energy", scream: "noise", stagger: "stagger", summon: "body" }[intentType] || "attack";
-        const intentArt = !rules.intentsHidden(state) && INTENT_ICONS[intentType];
-        intentIcon = intentArt ? el("img", "") : uiIcon(intentSymbol);
-        if (intentArt) {
-          intentIcon.src = intentArt;
-          intentIcon.alt = intentLabel(enemy);
-        }
+        const intentSymbol = {
+          hidden: "intent-hidden",
+          attack: "intent-attack",
+          guard: "intent-guard",
+          buff: "intent-charge",
+          regen: "intent-regen",
+          charge: "intent-charge",
+          scream: "intent-scream",
+          stagger: "intent-stagger",
+          summon: "intent-summon",
+        }[intentType] || "intent-attack";
+        intentIcon = uiIcon(intentSymbol);
         intentIcon.classList.add("intent-icon");
         if (intentType) intent.classList.add(`intent-${intentType}`);
         const intentValue = intentType === "hidden" ? "?"
@@ -3611,22 +3627,20 @@ const displayFont = (() => {
         if (enemy.intent?.infection && !rules.intentsHidden(state)) {
           const infectionToken = el("span", "intent-token intent-infection-token");
           infectionToken.setAttribute("aria-label", `감염 ${enemy.intent.infection}`);
-          infectionToken.append(uiIcon("infection"), el("b", "intent-value", `+${enemy.intent.infection}`));
+          infectionToken.append(uiIcon("intent-infection"), el("b", "intent-value", `+${enemy.intent.infection}`));
           intent.append(infectionToken);
         }
         if (enemy.intent?.grab && !rules.intentsHidden(state)) {
-          const grabIcon = el("img", "intent-icon");
-          grabIcon.src = INTENT_ICONS.grab;
-          grabIcon.alt = "붙잡기";
+          const grabIcon = uiIcon("intent-grab");
+          grabIcon.classList.add("intent-icon");
           const grabToken = el("span", "intent-token intent-grab-token");
           grabToken.append(grabIcon);
           intent.append(grabToken);
         }
         // 복합 의도(방어 + 힘 모으기): 방어 옆에 힘 모으기도 보인다.
         if (enemy.intent?.charge && !rules.intentsHidden(state)) {
-          const chargeIcon = el("img", "intent-icon");
-          chargeIcon.src = INTENT_ICONS.charge;
-          chargeIcon.alt = "힘 모으기";
+          const chargeIcon = uiIcon("intent-charge");
+          chargeIcon.classList.add("intent-icon");
           const chargeToken = el("span", "intent-token intent-charge-token");
           chargeToken.append(chargeIcon);
           intent.append(chargeToken);
@@ -3634,7 +3648,7 @@ const displayFont = (() => {
         if (enemy.intent?.coin && !rules.intentsHidden(state)) {
           const coinToken = el("span", "intent-token intent-coin-token");
           coinToken.setAttribute("aria-label", "동전 판정");
-          coinToken.append(uiIcon("coin"), el("b", "intent-value", "?"));
+          coinToken.append(uiIcon("intent-coin"), el("b", "intent-value", "?"));
           intent.append(coinToken);
         }
         intent.title = rules.intentsHidden(state) ? "알 수 없음" : intentLabel(enemy);
@@ -3682,14 +3696,14 @@ const displayFont = (() => {
         const rarity = rarityOf(card);
         const injuryLock = cardLockReason(card);
         const fan = index - (state.hand.length - 1) / 2;
-        const node = button("", () => selectCard(card.id), `card rarity-${rarity}${card.id === state.selected ? " selected" : ""}${state.energy < info.cost ? " unavailable" : ""}${injuryLock ? " limb-disabled" : ""}${dealtCards.has(card.id) ? " dealt" : ""}`);
+        const node = button("", () => selectCard(card.id), `card rarity-${rarity}${card.id === state.selected ? " selected" : ""}${state.energy < rules.cardCost(card) ? " unavailable" : ""}${injuryLock ? " limb-disabled" : ""}${dealtCards.has(card.id) ? " dealt" : ""}`);
         node.style.setProperty("--fan", fan);
         node.style.setProperty("--fan-abs", Math.abs(fan));
         node.disabled = !combat;
         if (injuryLock) node.setAttribute("aria-disabled", "true");
         node.dataset.focus = `card-${card.id}`;
         node.setAttribute("aria-pressed", String(card.id === state.selected));
-        node.setAttribute("aria-label", `${index === 9 ? 0 : index + 1}번 ${info.name}. ${RARITIES[rarity].name}. 행동력 ${info.cost}.${remainingUses != null ? ` 사용 횟수 ${remainingUses}/${sourceData.uses}.` : ""} ${detailText} 선택 후 전투 화면에서 사용.`);
+        node.setAttribute("aria-label", `${index === 9 ? 0 : index + 1}번 ${info.name}. ${RARITIES[rarity].name}. 행동력 ${rules.cardCost(card)}.${remainingUses != null ? ` 사용 횟수 ${remainingUses}/${sourceData.uses}.` : ""} ${detailText} 선택 후 전투 화면에서 사용.`);
         appendArt(node, card.key);
         appendUpgradeMark(node, card.upgraded);
         const cardTitle = el("strong", "card-title", info.name + (card.upgraded ? "+" : ""));
@@ -3697,11 +3711,11 @@ const displayFont = (() => {
         body.append(
           el("p", "card-summary sr-only", summary(card)),
           metricStrip(cardMetrics(info, card.upgraded, { damage: info.damage ? attackDamage(card) : 0, hits: hitCount(card), effects: skillEffects(card.key, card.upgraded), blockBonus: rules.blockBonus(state) })),
-          card.sourceItem ? el("small", "item-source", source ? sourceData.name : "소진") : el("small", "item-source", "스킬"),
+          card.sourceItem ? el("small", "item-source", source ? rules.itemName(source) : "소진") : el("small", "item-source", "스킬"),
           el("p", "card-detail", detailText)
         );
         if (injuryLock) body.append(el("span", "injury-lock", injuryLock));
-        node.append(el("span", "cost", info.cost));
+        node.append(el("span", "cost", rules.cardCost(card)));
         if (remainingUses != null) {
           const uses = el("span", "uses-badge");
           uses.append(el("small", "", "사용"), el("strong", "", `${remainingUses}/${sourceData.uses}`));

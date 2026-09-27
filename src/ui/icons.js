@@ -23,9 +23,9 @@ const paths = {
   noise: '<path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/>',
 };
 
-// Tabler Icons 3.48.0 (MIT). Status-only glyphs are kept separate so the
-// combat language can be tuned without changing card metrics or navigation.
-const tablerStatusIcons = {
+// Tabler Icons 3.48.0 (MIT). Combat-only glyphs are kept separate so the
+// status/intent language can be tuned without changing cards or navigation.
+const tablerIcons = {
   "status-strength": {
     body: '<path d="M20 4v5l-9 7-4 4-3-3 4-4 7-9h5"/><path d="m6.5 11.5 6 6"/>',
   },
@@ -57,10 +57,40 @@ const tablerStatusIcons = {
     filled: true,
     body: '<path d="M10 2c0-.88 1.056-1.331 1.692-.722 1.958 1.876 3.096 5.995 1.75 9.12l-.08.174.012.003c.625.133 1.203-.43 2.303-2.173l.14-.224a1 1 0 0 1 1.582-.153C18.733 9.46 20 12.402 20 14.295 20 18.56 16.409 22 12 22s-8-3.44-8-7.706c0-2.252 1.022-4.716 2.632-6.301l.605-.589c.241-.236.434-.43.618-.624C9.285 5.268 10 3.856 10 2"/>',
   },
+  "intent-summon": {
+    body: '<path d="M8 7a4 4 0 1 0 8 0 4 4 0 0 0-8 0"/><path d="M16 19h6m-3-3v6M6 21v-2a4 4 0 0 1 4-4h4"/>',
+  },
+  "intent-regen": {
+    body: '<path d="m12 20-7.5-7.428A5 5 0 1 1 12 6.006a5 5 0 1 1 7.96 6.053"/><path d="M16 19h6m-3-3v6"/>',
+  },
+  "intent-charge": {
+    filled: true,
+    body: '<path d="M13 2a1 1 0 0 1 1 1v6h5a1 1 0 0 1 .808 1.589l-8 11A1 1 0 0 1 10 21v-6H5a1 1 0 0 1-.808-1.589l8-11A1 1 0 0 1 13 2"/>',
+  },
+  "intent-scream": {
+    body: '<path d="M15 8a5 5 0 0 1 0 8m2.7-11a9 9 0 0 1 0 14M6 15H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h2l3.5-4.5A.8.8 0 0 1 11 5v14a.8.8 0 0 1-1.5.5L6 15"/>',
+  },
+  "intent-stagger": {
+    body: '<path d="M4 12h6l-6 8h6M14 4h6l-6 8h6"/>',
+  },
+  "intent-hidden": {
+    body: '<path d="M10.585 10.587a2 2 0 0 0 2.829 2.828M16.681 16.673A8.717 8.717 0 0 1 12 18c-3.6 0-6.6-2-9-6 1.272-2.12 2.712-3.678 4.32-4.674m2.86-1.146A9.055 9.055 0 0 1 12 6c3.6 0 6.6 2 9 6-.666 1.11-1.379 2.067-2.138 2.87M3 3l18 18"/>',
+  },
+  "intent-grab": {
+    body: '<path d="M8 11V7.5a1.5 1.5 0 0 1 3 0V10m0-.5v-3a1.5 1.5 0 0 1 3 0V10m0-2.5a1.5 1.5 0 0 1 3 0V10m0-.5a1.5 1.5 0 0 1 3 0V14a6 6 0 0 1-6 6h-1.792a6 6 0 0 1-5.012-2.7L7 17l-3.286-5.728A1.5 1.5 0 0 1 6.53 9.53L8 11"/>',
+  },
+  "intent-coin": {
+    filled: true,
+    body: '<path d="M17 3.34A10 10 0 1 1 2 12l.005-.324A10 10 0 0 1 17 3.34M12 6a1 1 0 0 0-1 1 3 3 0 1 0 0 6v2a1.024 1.024 0 0 1-.866-.398l-.068-.101a1 1 0 0 0-1.732.998A3 3 0 0 0 10.839 17H11a1 1 0 0 0 .883.993L12 18a1 1 0 0 0 1-1l.176-.005A3 3 0 0 0 13 11V9c.358-.012.671.14.866.398l.068.101a1 1 0 0 0 1.732-.998A3 3 0 0 0 13.161 7H13a1 1 0 0 0-1-1m1 7a1 1 0 0 1 0 2v-2m-2-4v2a1 1 0 0 1 0-2"/>',
+  },
 };
 
+tablerIcons["intent-attack"] = tablerIcons["status-strength"];
+tablerIcons["intent-guard"] = tablerIcons["status-block"];
+tablerIcons["intent-infection"] = tablerIcons["status-infection"];
+
 export function uiIcon(name) {
-  const tabler = tablerStatusIcons[name];
+  const tabler = tablerIcons[name];
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
   svg.setAttribute('fill', tabler?.filled ? 'currentColor' : 'none');
@@ -70,7 +100,7 @@ export function uiIcon(name) {
   svg.setAttribute('stroke-linejoin', 'round');
   svg.setAttribute('aria-hidden', 'true');
   svg.classList.add('hud-icon');
-  if (tabler) svg.classList.add('status-tabler-icon', tabler.filled ? 'is-filled' : 'is-outline');
+  if (tabler) svg.classList.add('tabler-icon', tabler.filled ? 'is-filled' : 'is-outline');
   svg.innerHTML = tabler?.body || paths[name] || paths.body;
   return svg;
 }

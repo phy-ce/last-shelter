@@ -228,7 +228,7 @@ export const CARDS = {
         effects: (u) => ({ sound: "guard", block: u ? 6 : 4, draw: 1 })
       },
       feint: {
-        name: "허를 찌르기", rarity: "rare", cost: 1, type: "attack", target: "single",
+        name: "허를 찌르기", rarity: "rare", cost: 1, upgradedCost: 0, type: "attack", target: "single",
         damage: (u) => u ? 5 : 3, stagger: true, exhaust: true,
         text: (u, p = 0) => `피해 ${Math.max(0, (u ? 5 : 3) + p)}. 대상 경직.\n소멸.`
       },
@@ -293,7 +293,7 @@ export const CARDS = {
         effects: (u) => ({ sound: "quiet", block: u ? 8 : 5 })
       },
       maintenance: {
-        name: "개인 정비", rarity: "uncommon", cost: 3, type: "skill", target: "self", choice: true,
+        name: "개인 정비", rarity: "uncommon", cost: 3, upgradedCost: 2, type: "skill", target: "self", choice: true,
         text: () => `둘 중 하나 선택:\n방어도 10 획득 / 손에 든 장비 교체.`,
         effects: () => ({ sound: "guard", block: 10 })
       },

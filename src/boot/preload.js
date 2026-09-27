@@ -7,15 +7,15 @@ import { ITEMS } from '../content/items.js'
 
 // assets.js 밖, game.js 안에만 적혀 있는 그림들.
 const CLASS_PORTRAITS = [
-  '/assets/art/survivor-class-v1.png',
-  '/assets/art/survivor-mage-v1.png',
-  '/assets/art/survivor-berserker-v1.png',
+  '/assets/art/survivor-class-v1.webp',
+  '/assets/art/survivor-mage-v1.webp',
+  '/assets/art/survivor-berserker-v1.webp',
 ]
 const ROUTE_ART = [
-  '/assets/art/route-shelter-v1.png',
-  '/assets/art/route-workshop-v1.png',
-  '/assets/art/route-stranger-v1.png',
-  '/assets/art/route-armory-v1.png',
+  '/assets/art/route-shelter-v1.webp',
+  '/assets/art/route-workshop-v1.webp',
+  '/assets/art/route-stranger-v1.webp',
+  '/assets/art/route-armory-v1.webp',
 ]
 
 // assets.js 값(문자열 경로 · Image · 그 둘을 담은 객체)을 전부 펼친다.
@@ -40,7 +40,7 @@ function startCardArt() {
 /** [필수, 나머지]. 같은 파일은 한 번만. */
 export function artTiers() {
   const first = [
-    ART.COMBAT_BACKGROUND, ART.SURVIVOR_SPRITES, ART.INFECTED, ART.INTENT_ICONS, ART.EFFECT_SPRITES,
+    ART.COMBAT_BACKGROUND, ART.SURVIVOR_SPRITES, ART.INFECTED, ART.EFFECT_SPRITES,
     ART.COIN_HEADS, ART.COIN_TAILS, ART.UPGRADE_EPAULETTE, CLASS_PORTRAITS, startCardArt(),
   ]
   const seen = new Set()

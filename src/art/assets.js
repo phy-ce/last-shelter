@@ -6,24 +6,24 @@ function image(src) {
 }
 
 export const COMBAT_BACKGROUND = image('/assets/art/city-combat-bg-v1.webp')
-export const SURVIVOR = image('/assets/art/survivor-v1.png')
+export const SURVIVOR = image('/assets/art/survivor-v1.webp')
 export const SURVIVOR_INJURED = {
-  arm: image('/assets/art/survivor-arm-injured-v1.png'),
-  leg: image('/assets/art/survivor-leg-injured-v1.png'),
+  arm: image('/assets/art/survivor-arm-injured-v1.webp'),
+  leg: image('/assets/art/survivor-leg-injured-v1.webp'),
 }
 export const SURVIVOR_SPRITES = {
   survivor: SURVIVOR,
-  mage: image('/assets/art/survivor-mage-v1.png'),
-  berserker: image('/assets/art/survivor-berserker-v1.png'),
+  mage: image('/assets/art/survivor-mage-v1.webp'),
+  berserker: image('/assets/art/survivor-berserker-v1.webp'),
 }
 // classId: { arm?, leg? } — 직업별 부상 스프라이트가 생기면 여기에 등록한다.
 export const SURVIVOR_INJURED_BY_CLASS = {
   mage: {
-    leg: image('/assets/art/survivor-mage-leg-injured-v1.png'),
+    leg: image('/assets/art/survivor-mage-leg-injured-v1.webp'),
   },
   berserker: {
-    arm: image('/assets/art/survivor-berserker-arm-injured-v1.png'),
-    leg: image('/assets/art/survivor-berserker-leg-injured-v1.png'),
+    arm: image('/assets/art/survivor-berserker-arm-injured-v1.webp'),
+    leg: image('/assets/art/survivor-berserker-leg-injured-v1.webp'),
   },
 }
 
@@ -34,63 +34,50 @@ export function heroSprite({ classId, injury }) {
   if (!injury) return base
   return SURVIVOR_INJURED_BY_CLASS[classId]?.[injury] || SURVIVOR_INJURED[injury] || base
 }
-export const INFECTED = image('/assets/art/infected-v1.png')
-export const COIN_HEADS = '/assets/art/coin-heads-v2.png'
-export const COIN_TAILS = '/assets/art/coin-tails-v2.png'
-
-export const INTENT_ICONS = {
-  attack: '/assets/art/intent-zombie-attack-v1.png',
-  guard: '/assets/art/intent-guard-v1.png',
-  zombieGuard: '/assets/art/intent-zombie-guard-v1.png',
-  charge: '/assets/art/intent-charge-v1.png',
-  coin: '/assets/art/intent-coin-danger-v1.png',
-  infection: '/assets/art/status-infection-v1.png',
-  stagger: '/assets/art/intent-stagger-v1.png',
-  scream: '/assets/art/intent-scream-v1.png',
-  regen: '/assets/art/intent-regen-v1.png',
-  grab: '/assets/art/intent-grab-v1.png',
-}
+export const INFECTED = image('/assets/art/infected-v1.webp')
+export const COIN_HEADS = '/assets/art/coin-heads-v2.webp'
+export const COIN_TAILS = '/assets/art/coin-tails-v2.webp'
 
 export const EFFECT_SPRITES = {
-  flare: image('/assets/art/fx-flare-v1.png'),
-  flareImpact: image('/assets/art/fx-flare-impact-v1.png'),
-  flashbang: image('/assets/art/fx-flashbang-v1.png'),
-  grenade: image('/assets/art/fx-grenade-blast-v1.png'),
-  molotov: image('/assets/art/fx-molotov-v1.png'),
-  burn: image('/assets/art/fx-burn-v1.png'),
-  muzzle: image('/assets/art/fx-muzzle-v1.png'),
-  impact: image('/assets/art/fx-impact-v1.png'),
-  slash: image('/assets/art/fx-slash-v1.png'),
-  guard: image('/assets/art/fx-guard-v1.png'),
-  heal: image('/assets/art/fx-heal-v1.png'),
-  quiet: image('/assets/art/fx-quiet-v1.png'),
-  focus: image('/assets/art/fx-focus-v1.png'),
+  flare: image('/assets/art/fx-flare-v1.webp'),
+  flareImpact: image('/assets/art/fx-flare-impact-v1.webp'),
+  flashbang: image('/assets/art/fx-flashbang-v1.webp'),
+  grenade: image('/assets/art/fx-grenade-blast-v1.webp'),
+  molotov: image('/assets/art/fx-molotov-v1.webp'),
+  burn: image('/assets/art/fx-burn-v1.webp'),
+  muzzle: image('/assets/art/fx-muzzle-v1.webp'),
+  impact: image('/assets/art/fx-impact-v1.webp'),
+  slash: image('/assets/art/fx-slash-v1.webp'),
+  guard: image('/assets/art/fx-guard-v1.webp'),
+  heal: image('/assets/art/fx-heal-v1.webp'),
+  quiet: image('/assets/art/fx-quiet-v1.webp'),
+  focus: image('/assets/art/fx-focus-v1.webp'),
 }
 
 export const ENEMY_SPRITES = {
   walker: INFECTED,
-  runner: image('/assets/art/enemy-runner-v1.png'),
-  spitter: image('/assets/art/enemy-spitter-v1.png'),
-  brute: image('/assets/art/enemy-brute-v1.png'),
-  boss: image('/assets/art/enemy-boss-v1.png'),
-  shrieker: image('/assets/art/enemy-shrieker-v1.png'),
-  crawler: image('/assets/art/enemy-crawler-v1.png'),
-  bloater: image('/assets/art/enemy-bloater-v1.png'),
+  runner: image('/assets/art/enemy-runner-v1.webp'),
+  spitter: image('/assets/art/enemy-spitter-v1.webp'),
+  brute: image('/assets/art/enemy-brute-v1.webp'),
+  boss: image('/assets/art/enemy-boss-v1.webp'),
+  shrieker: image('/assets/art/enemy-shrieker-v1.webp'),
+  crawler: image('/assets/art/enemy-crawler-v1.webp'),
+  bloater: image('/assets/art/enemy-bloater-v1.webp'),
 }
 
 export const ENEMY_INJURED_SPRITES = {
-  runner: { leg: image('/assets/art/enemy-runner-leg-injured-v1.png') },
-  spitter: { arm: image('/assets/art/enemy-spitter-arm-injured-v1.png') },
-  brute: { arm: image('/assets/art/enemy-brute-arm-injured-v1.png') },
+  runner: { leg: image('/assets/art/enemy-runner-leg-injured-v1.webp') },
+  spitter: { arm: image('/assets/art/enemy-spitter-arm-injured-v1.webp') },
+  brute: { arm: image('/assets/art/enemy-brute-arm-injured-v1.webp') },
   boss: {
-    arm: image('/assets/art/enemy-boss-arm-injured-v1.png'),
-    leg: image('/assets/art/enemy-boss-leg-injured-v1.png'),
+    arm: image('/assets/art/enemy-boss-arm-injured-v1.webp'),
+    leg: image('/assets/art/enemy-boss-leg-injured-v1.webp'),
   },
-  crawler: { leg: image('/assets/art/enemy-crawler-leg-injured-v1.png') },
-  bloater: { arm: image('/assets/art/enemy-bloater-arm-injured-v1.png') },
+  crawler: { leg: image('/assets/art/enemy-crawler-leg-injured-v1.webp') },
+  bloater: { arm: image('/assets/art/enemy-bloater-arm-injured-v1.webp') },
 }
 
-export const UPGRADE_EPAULETTE = '/assets/art/upgrade-epaulette-v1.png'
+export const UPGRADE_EPAULETTE = '/assets/art/upgrade-epaulette-v1.webp'
 
 export const CARD_ART = {
   knife: '/assets/art/card-knife-v2.webp',

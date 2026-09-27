@@ -55,10 +55,13 @@ export function makeItem(key) {
   // pos: 가방 안 위치 { x, y, rot } — 손에 들었으면 null. rot 1이면 90° 회전(가로세로 바뀜).
   return { uid: ++uid, key, uses: data.uses ?? null, upgraded: false, pos: null }
 }
-// 화면·로그용 이름. 탄약은 개수를 붙인다: '탄약 ×8'.
+// 화면·로그용 이름. 강화한 장비는 '+', 탄약은 개수를 붙인다: '쇠지레+', '탄약 ×8'.
+export function itemName(item) {
+  return itemDef(item.key).name + (item.upgraded ? '+' : '')
+}
 export function itemLabel(item) {
   const data = itemDef(item.key)
-  return data.kind === 'resource' ? `${data.name} ×${item.uses}` : data.name
+  return data.kind === 'resource' ? `${data.name} ×${item.uses}` : itemName(item)
 }
 
 export const HAND_LIMIT = 10
@@ -201,6 +204,7 @@ export function normalizeBag(state, events = []) {
     stack.uses = AMMO_STACK
     addRounds(state, extra, events, '')
   }
+  mergeAmmo(state)
   for (const item of [...state.inventory]) {
     if (item.pos || isEquipped(state, item.uid)) continue
     if (item.pos === undefined) item.pos = null
@@ -276,7 +280,7 @@ export function consumeAmmo(state, amount, events = []) {
     remaining -= spent
     if (!remaining) break
   }
-  state.inventory = state.inventory.filter(item => item.key !== 'magazine' || item.uses > 0)
+  mergeAmmo(state)
   return log(state, events, `탄약 ${amount}발 사용 · ${ammoCount(state)}발 남음.`)
 }
 
@@ -608,12 +612,18 @@ export function cleanEnemies(state) {
 
 // ── 카드 사용 ──────────────────────────────────────────────────
 
+/** 행동력 비용. 강화하면 upgradedCost가 있는 카드는 그 값. */
+export function cardCost(card) {
+  const data = CARDS[card.key]
+  return card.upgraded && data.upgradedCost != null ? data.upgradedCost : data.cost
+}
+
 /** 이 카드를 이 대상에 쓸 수 있는가. `{ ok, reason, enemy, targets }`. */
 export function canPlay(state, card, kind, enemyId = null, partKey = null) {
   const lock = cardLockReason(state, card)
   if (lock) return { ok: false, reason: lock }
   const data = CARDS[card.key]
-  if (state.energy < data.cost) return { ok: false, reason: `행동력 부족 · 필요 ${data.cost}` }
+  if (state.energy < cardCost(card)) return { ok: false, reason: `행동력 부족 · 필요 ${cardCost(card)}` }
   const enemy = state.enemies.find(e => e.id === enemyId) || null
   if (data.target === 'single') {
     if (kind !== 'enemy' || !enemy) return { ok: false, reason: null }
@@ -680,7 +690,7 @@ export function beginCard(state, card, events = []) {
   if (data.ammo) consumeAmmo(state, data.ammo, events)
   const index = state.hand.findIndex(c => c.id === card.id)
   if (index >= 0) state.hand.splice(index, 1)
-  state.energy -= data.cost
+  state.energy -= cardCost(card)
   state.selected = null
   return log(state, events, `${data.name}${card.upgraded ? '+' : ''} 사용.`)
 }
@@ -1081,6 +1091,14 @@ function topUpAmmo(state, rounds) {
   return rounds
 }
 
+/** 가방의 탄약을 한데 모은다: 앞 칸부터 8발씩 채우고 빈 칸은 치운다. 1발·2발 칸이 따로 놀지 않게. */
+export function mergeAmmo(state) {
+  const stacks = ammoStacks(state)
+  let total = stacks.reduce((sum, entry) => sum + entry.uses, 0)
+  for (const stack of stacks) { stack.uses = Math.min(AMMO_STACK, total); total -= stack.uses }
+  state.inventory = state.inventory.filter(entry => entry.key !== 'magazine' || entry.uses > 0)
+}
+
 function addRounds(state, rounds, events, why) {
   let left = topUpAmmo(state, rounds)
   while (left > 0) {
@@ -1162,16 +1180,19 @@ export function addSkill(state, key, events = []) {
 }
 
 /** 정비소: 카드 1장 영구 강화. 장비 카드면 그 장비의 모든 카드가 함께 강화된다. */
+// 장비 카드는 장비에 딸려 있다: 강화는 장비에 기록되고, 카드는 장비에서 다시 만들어진다.
+export function upgradeItem(state, item, events = []) {
+  item.upgraded = true
+  syncDeck(state)
+  return log(state, events, `${itemName(item)} 강화 · ${itemDef(item.key).cards.map(key => CARDS[key].name + '+').join(' · ')}.`)
+}
+
 export function upgradeCard(state, card, events = []) {
   const item = sourceItem(state, card)
-  if (item) {
-    item.upgraded = true
-    state.deck.filter(entry => entry.sourceItem === item.uid).forEach(entry => { entry.upgraded = true })
-  } else {
-    card.upgraded = true
-    const skill = state.skills.find(entry => entry.key === card.key && !entry.upgraded)
-    if (skill) skill.upgraded = true
-  }
+  if (item) return upgradeItem(state, item, events)
+  card.upgraded = true
+  const skill = state.skills.find(entry => entry.key === card.key && !entry.upgraded)
+  if (skill) skill.upgraded = true
   return log(state, events, `${CARDS[card.key].name}+ 강화.`)
 }
 

@@ -182,13 +182,18 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .enemy-intent { position: absolute; z-index: 3; left: 50%; bottom: 25px; display: flex; flex-wrap: nowrap; justify-content: center; width: max-content; min-width: 31px; max-width: 150px; gap: 5px; padding: 0; overflow: visible; border: 0; background: transparent; transform: translateX(-50%); white-space: nowrap; }
 .intent-token { position: relative; display: grid; flex: 0 0 31px; width: 31px; height: 31px; place-items: center; overflow: visible; }
 .enemy-intent .intent-icon,
-.enemy-intent .hud-icon { width: 30px; height: 30px; margin: 0; object-fit: contain; filter: drop-shadow(0 2px 4px #000b); color: #dfad85; }
+.enemy-intent .hud-icon { width: 30px; height: 30px; margin: 0; object-fit: contain; filter: drop-shadow(0 2px 4px #000b); color: #ed9a79; }
 .enemy-intent .coin-intent-icon { width: 29px; height: 29px; }
-.enemy-intent.intent-guard .hud-icon { color: #9fbac4; }
-.enemy-intent.intent-regen .hud-icon { color: #b2c997; }
+.enemy-intent.intent-guard .hud-icon { color: #86c8e9; }
+.enemy-intent.intent-regen .hud-icon { color: #9fd07f; }
+.enemy-intent.intent-charge .hud-icon, .enemy-intent.intent-buff .hud-icon { color: #e6c66e; }
+.enemy-intent.intent-scream .hud-icon { color: #d6a07e; }
+.enemy-intent.intent-summon .hud-icon { color: #c8b4df; stroke-width: 2.2; }
 .enemy-intent.intent-stagger .hud-icon, .enemy-intent.intent-hidden .hud-icon { color: #aaa8a3; }
-.enemy-intent .intent-infection-token .hud-icon { color: #a9c979; }
+.enemy-intent .intent-infection-token .hud-icon { color: #a9dc62; }
 .enemy-intent .intent-infection-token .intent-value { color: #d8efb3; }
+.enemy-intent .intent-grab-token .hud-icon { color: #c8b4df; }
+.enemy-intent .intent-charge-token .hud-icon { color: #e6c66e; }
 .enemy-intent .intent-coin-token .hud-icon { color: #d9bb75; }
 .enemy-intent .intent-coin-token .intent-value { color: #ffe3a2; }
 .enemy-intent .intent-value { position: absolute; z-index: 2; right: -2px; bottom: -3px; min-width: 16px; color: #fff0cf; font: 700 14px/1 var(--font-display); text-align: center; text-shadow: -2px -2px 2px #070707, 2px -2px 2px #070707, -2px 2px 2px #070707, 2px 2px 2px #070707, 0 3px 5px #000; }
@@ -228,17 +233,20 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .burn .hud-icon { width: 30px; height: 30px; filter: drop-shadow(0 2px 4px #000b); }
 .burn b { position: absolute; right: -2px; bottom: -3px; min-width: 16px; color: currentColor; font: 16px/1 var(--font-display); text-align: center; text-shadow: -2px -2px 2px #070707, 2px -2px 2px #070707, -2px 2px 2px #070707, 2px 2px 2px #070707, 0 3px 5px #000; }
 
-/* Slay-the-Spire-style status language: one compact row per combatant. */
+/* Five tokens per row; crowded status sets fold into a stable second row. */
 .status-stack {
   --status-token-size: 40px;
   --status-icon-size: 28px;
   position: absolute;
   z-index: 7;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  align-content: center;
   justify-content: center;
   gap: 5px;
-  max-width: 420px;
+  width: calc(var(--status-token-size) * 5 + 20px);
+  max-width: calc(var(--status-token-size) * 5 + 20px);
   transform: translate(-50%, -100%);
   pointer-events: auto;
 }
@@ -246,11 +254,12 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
   position: absolute;
   left: 50%;
   top: calc(var(--enemy-name-top, 270px) + 28px);
-  width: 100%;
-  max-width: none;
+  width: min(100%, calc(var(--status-token-size) * 5 + 20px));
+  max-width: calc(var(--status-token-size) * 5 + 20px);
   margin: 0;
   transform: translateX(-50%);
 }
+.status-stack-hero { transform: translateX(-50%); }
 .status-token {
   --status-color: #b9b2a5;
   position: relative;
@@ -279,8 +288,8 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
   height: var(--status-icon-size);
   filter: drop-shadow(0 1px 1px #000) drop-shadow(0 0 3px #000b);
 }
-.status-token .status-tabler-icon.is-outline { stroke-width: 2.2; }
-.status-token .status-tabler-icon.is-filled { transform: scale(.96); }
+.status-token .tabler-icon.is-outline { stroke-width: 2.2; }
+.status-token .tabler-icon.is-filled { transform: scale(.96); }
 .status-token .status-value {
   position: absolute;
   right: -4px;
