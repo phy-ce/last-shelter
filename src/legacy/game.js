@@ -1945,7 +1945,6 @@ const displayFont = (() => {
 
       for (const [key, name] of [
         ["music", "배경 음악"],
-        ["ambience", "폐허 환경음"],
         ["blood", "혈흔"],
         ["motion", "강한 움직임"]
       ]) {
@@ -1959,9 +1958,7 @@ const displayFont = (() => {
           settings[key] = checkbox.checked;
           saveSettings();
 
-          if (key === "ambience") {
-            Sound.ambience();
-          } else if (key === "music") {
+          if (key === "music") {
             Music.updateVolume();
           } else if (key === "blood") {
             figureCache.clear();

@@ -4,7 +4,7 @@ const STORAGE_KEY = 'last-shelter:settings'
 const defaults = {
   volume: 72,
   muted: false,
-  ambience: true,
+  ambience: false, // 폐허 환경음: 배경 음악으로 대체되어 꺼 둔다(설정에서도 뺐다).
   music: true,
   motion: !motionPreference.matches,
   blood: true,
@@ -17,7 +17,7 @@ function loadSettings() {
     const parsed = JSON.parse(raw)
     const result = {}
     if (typeof parsed.volume === 'number') result.volume = Math.max(0, Math.min(100, parsed.volume))
-    for (const key of ['muted', 'ambience', 'music', 'motion', 'blood']) {
+    for (const key of ['muted', 'music', 'motion', 'blood']) {
       if (typeof parsed[key] === 'boolean') result[key] = parsed[key]
     }
     return result
