@@ -3446,7 +3446,7 @@ const displayFont = (() => {
       playerStatuses.forEach(([kind, label, title, tip, pendingValue]) => {
         heroStatusStack.append(statusToken({
           kind: kind === "infection" && rules.hasFever(state) ? "fever" : kind,
-          icon: { strength: "attack", block: "shield", injury: "body", noise: "noise", infection: "infection", numb: "heal", grab: "arm", pending: "clock" }[kind],
+          icon: `status-${kind}`,
           value: kind === "strength" ? `+${state.strength}` : kind === "block" ? state.block : kind === "injury" ? injuredCount() : kind === "noise" ? state.noise : kind === "infection" ? state.infection : kind === "grab" ? state.drawPenalty || state.grabbed : kind === "pending" ? pendingValue : null,
           label, title, tip,
           action: kind === "injury" ? showBody : null
@@ -3463,14 +3463,14 @@ const displayFont = (() => {
 
         if (enemy.block > 0) {
           enemyStatusStack.append(statusToken({
-            kind: "block", icon: "shield", value: enemy.block, label: "방어도",
+            kind: "block", icon: "status-block", value: enemy.block, label: "방어도",
             title: "방어도", tip: "받는 공격 피해를 먼저 흡수합니다."
           }));
         }
 
         if (enemy.strength > 0) {
           enemyStatusStack.append(statusToken({
-            kind: "strength", icon: "attack", value: `+${enemy.strength}`, label: "힘",
+            kind: "strength", icon: "status-strength", value: `+${enemy.strength}`, label: "힘",
             title: "힘", tip: "이 적의 모든 기본 공격 피해가 증가합니다."
           }));
         }
@@ -3479,14 +3479,14 @@ const displayFont = (() => {
           const card = { key: entry.key, upgraded: entry.upgraded };
           const dmg = attackDamage(card, entry.partKey);
           enemyStatusStack.append(statusToken({
-            kind: "pending", icon: "clock", value: dmg, label: "예약",
+            kind: "pending", icon: "status-pending", value: dmg, label: "예약",
             title: `예약 · ${CARDS[entry.key].name}${entry.upgraded ? "+" : ""}`,
             tip: `다음 내 턴 시작에 이 적의 ${entry.partKey === "arm" ? "팔" : entry.partKey === "leg" ? "다리" : "몸통"}에 피해 ${dmg}. 대상이 죽으면 다른 적에게 옮겨갑니다.`
           }));
         }
 
         if (enemy.burn > 0) {
-          enemyStatusStack.append(statusToken({ kind: "burn", icon: "flame", value: enemy.burn, label: "화상", title: "화상", tip: BURN_TEXT }));
+          enemyStatusStack.append(statusToken({ kind: "burn", icon: "status-burn", value: enemy.burn, label: "화상", title: "화상", tip: BURN_TEXT }));
         }
 
         if (enemy.parts.length) {

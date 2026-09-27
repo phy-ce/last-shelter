@@ -23,16 +23,54 @@ const paths = {
   noise: '<path d="M3 10v4m4-7v10m5-14v18m5-14v10m4-7v4"/>',
 };
 
+// Tabler Icons 3.48.0 (MIT). Status-only glyphs are kept separate so the
+// combat language can be tuned without changing card metrics or navigation.
+const tablerStatusIcons = {
+  "status-strength": {
+    body: '<path d="M20 4v5l-9 7-4 4-3-3 4-4 7-9h5"/><path d="m6.5 11.5 6 6"/>',
+  },
+  "status-block": {
+    filled: true,
+    body: '<path d="M11.884 2.007 11.998 2l.118.007.059.008.061.013.111.034a.993.993 0 0 1 .217.112l.104.082.255.218a11 11 0 0 0 7.189 2.537l.342-.01a1 1 0 0 1 1.005.717 13 13 0 0 1-9.208 16.25 1 1 0 0 1-.502 0A13 13 0 0 1 2.54 5.718 1 1 0 0 1 3.545 5a11 11 0 0 0 7.531-2.527l.263-.225.096-.075a.993.993 0 0 1 .217-.112l.112-.034a.97.97 0 0 1 .12-.02Z"/>',
+  },
+  "status-injury": {
+    body: '<path d="M15 3a3 3 0 0 1 3 3 3 3 0 1 1-2.12 5.122l-4.758 4.758a3 3 0 1 1-5.117 2.297V18h-.176a3 3 0 1 1 2.298-5.115l4.758-4.758A3 3 0 0 1 15.005 3H15"/><path d="m10.65 10.35 1.55 1.25-1.15 1.45 1.5 1.2"/>',
+  },
+  "status-noise": {
+    body: '<path d="M21 12h-2c-.894 0-1.662-.857-1.761-2-.296-3.45-.749-6-2.749-6s-2.5 3.582-2.5 8-.5 8-2.5 8-2.452-2.547-2.749-6c-.1-1.147-.867-2-1.763-2H3"/>',
+  },
+  "status-infection": {
+    body: '<path d="M7 12a5 5 0 1 0 10 0 5 5 0 1 0-10 0M12 7V3m-1 0h2m2.536 5.464 2.828-2.828m-.707-.707 1.414 1.414M17 12h4m0-1v2m-5.465 2.536 2.829 2.828m.707-.707-1.414 1.414M12 17v4m1 0h-2m-2.535-5.464-2.829 2.828m.707.707L4.93 17.657M7 12H3m0 1v-2m5.464-2.536L5.636 5.636m-.707.707L6.343 4.93"/>',
+  },
+  "status-numb": {
+    filled: true,
+    body: '<path d="M20.207 3.793a5.95 5.95 0 0 1 0 8.414l-8 8a5.95 5.95 0 0 1-8.414-8.414l8-8a5.95 5.95 0 0 1 8.414 0m-7 1.414L8.913 9.5l5.586 5.586 4.294-4.292a3.95 3.95 0 1 0-5.586-5.586"/>',
+  },
+  "status-grab": {
+    body: '<path d="m9 15 6-6M11 6l.463-.536a5 5 0 0 1 7.071 7.072L18 13m-5 5-.397.534a5.068 5.068 0 0 1-7.127 0 4.972 4.972 0 0 1 0-7.071L6 11"/>',
+  },
+  "status-pending": {
+    filled: true,
+    body: '<path d="M17 3.34A10 10 0 1 1 2.005 12.324L2 12l.005-.324A10 10 0 0 1 17 3.34M12 6a1 1 0 0 0-.993.883L11 7v5l.009.131a1 1 0 0 0 .197.477l.087.1 3 3 .094.082a1 1 0 0 0 1.226 0l.094-.083.083-.094a1 1 0 0 0 0-1.226l-.083-.094L13 11.585V7l-.007-.117A1 1 0 0 0 12 6"/>',
+  },
+  "status-burn": {
+    filled: true,
+    body: '<path d="M10 2c0-.88 1.056-1.331 1.692-.722 1.958 1.876 3.096 5.995 1.75 9.12l-.08.174.012.003c.625.133 1.203-.43 2.303-2.173l.14-.224a1 1 0 0 1 1.582-.153C18.733 9.46 20 12.402 20 14.295 20 18.56 16.409 22 12 22s-8-3.44-8-7.706c0-2.252 1.022-4.716 2.632-6.301l.605-.589c.241-.236.434-.43.618-.624C9.285 5.268 10 3.856 10 2"/>',
+  },
+};
+
 export function uiIcon(name) {
+  const tabler = tablerStatusIcons[name];
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-width', '1.6');
+  svg.setAttribute('fill', tabler?.filled ? 'currentColor' : 'none');
+  svg.setAttribute('stroke', tabler?.filled ? 'none' : 'currentColor');
+  svg.setAttribute('stroke-width', tabler ? '2.2' : '1.6');
   svg.setAttribute('stroke-linecap', 'round');
   svg.setAttribute('stroke-linejoin', 'round');
   svg.setAttribute('aria-hidden', 'true');
   svg.classList.add('hud-icon');
-  svg.innerHTML = paths[name] || paths.body;
+  if (tabler) svg.classList.add('status-tabler-icon', tabler.filled ? 'is-filled' : 'is-outline');
+  svg.innerHTML = tabler?.body || paths[name] || paths.body;
   return svg;
 }

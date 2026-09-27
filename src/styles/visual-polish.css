@@ -233,7 +233,7 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 /* Slay-the-Spire-style status language: one compact row per combatant. */
 .status-stack {
   --status-token-size: 40px;
-  --status-icon-size: 35px;
+  --status-icon-size: 28px;
   position: absolute;
   z-index: 7;
   display: flex;
@@ -264,14 +264,25 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
   place-items: center;
   padding: 0;
   overflow: visible;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: var(--status-color);
-  box-shadow: none;
+  border: 1px solid color-mix(in srgb, var(--status-color) 72%, #f8efe0 28%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 25%, color-mix(in srgb, var(--status-color) 24%, #24282d) 0%, #111419 46%, #07090c 100%);
+  color: color-mix(in srgb, var(--status-color) 68%, #fff 32%);
+  box-shadow:
+    inset 0 0 0 2px #050608d6,
+    inset 0 1px 5px color-mix(in srgb, var(--status-color) 24%, transparent),
+    0 2px 6px #000c,
+    0 0 7px color-mix(in srgb, var(--status-color) 18%, transparent);
   transition: translate 120ms ease, border-color 120ms ease, filter 120ms ease;
 }
-.status-token .hud-icon { width: var(--status-icon-size); height: var(--status-icon-size); filter: drop-shadow(0 2px 3px #000) drop-shadow(0 0 4px #000); }
+.status-token .hud-icon {
+  width: var(--status-icon-size);
+  height: var(--status-icon-size);
+  filter: drop-shadow(0 1px 1px #000) drop-shadow(0 0 3px #000b);
+}
+.status-token .status-tabler-icon.is-outline { stroke-width: 2.2; }
+.status-token .status-tabler-icon.is-filled { transform: scale(.96); }
 .status-token .status-value {
   position: absolute;
   right: -4px;
@@ -302,13 +313,13 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 }
 .status-token:is(:hover, :focus-visible) { z-index: 2; translate: 0 -3px; filter: brightness(1.2); }
 .status-token:is(:hover, :focus-visible)::after { opacity: 1; translate: -50% 0; }
-.status-burn { --status-color: #e89357; }
-.status-pending { --status-color: #aebff1; }
-.status-infection { --status-color: #a9c979; }
-.status-block { --status-color: #9fbacb; }
-.status-strength { --status-color: #dc9a7b; }
-.status-injury { --status-color: #df8e78; }
-.status-noise { --status-color: #c9ad78; }
+.status-burn { --status-color: #ff8b3d; }
+.status-pending { --status-color: #aebcff; }
+.status-infection { --status-color: #a9dc62; }
+.status-block { --status-color: #88d1f2; }
+.status-strength { --status-color: #f09670; }
+.status-injury { --status-color: #f17669; }
+.status-noise { --status-color: #e5bb62; }
 
 .item-preview-meta {
   display: flex;
@@ -337,9 +348,9 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 }
 .item-shape-grid i { border: 1px solid #776e5d30; background: #242724; }
 .item-shape-grid i.occupied { border-color: #e0c17eaa; background: #a8874c; box-shadow: inset 0 0 0 1px #f0d9a24f; }
-.status-fever { --status-color: #e56e5c; animation: status-fever-pulse 1.6s ease-in-out infinite; }
-.status-grab { --status-color: #ddbd82; }
-.status-numb { --status-color: #91c4d8; }
+.status-fever { --status-color: #ff6455; animation: status-fever-pulse 1.6s ease-in-out infinite; }
+.status-grab { --status-color: #e1b86c; }
+.status-numb { --status-color: #79cce8; }
 @keyframes status-fever-pulse { 50% { filter: drop-shadow(0 0 6px #d64e3d8f); } }
 @media (prefers-reduced-motion: reduce) { .status-fever { animation: none; } }
 
