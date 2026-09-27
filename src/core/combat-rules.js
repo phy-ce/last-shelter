@@ -195,6 +195,12 @@ export function discardItem(state, uid, events = []) {
 /** 세이브 복원용: pos 없는 옛 아이템을 가방에 채워 넣고, 못 넣는 것은 버린다. */
 export function normalizeBag(state, events = []) {
   state.bag = state.bag || { cols: BAG.cols, rows: BAG.rows }
+  // 예전 세이브: 한 칸에 8발 넘게 쌓인 탄약을 나눈다.
+  for (const stack of state.inventory.filter(entry => entry.key === 'magazine' && entry.uses > AMMO_STACK)) {
+    const extra = stack.uses - AMMO_STACK
+    stack.uses = AMMO_STACK
+    addRounds(state, extra, events, '')
+  }
   for (const item of [...state.inventory]) {
     if (item.pos || isEquipped(state, item.uid)) continue
     if (item.pos === undefined) item.pos = null
@@ -1044,19 +1050,37 @@ export function firearmBonusRounds(data) {
 }
 
 /** 탄약은 한 묶음으로 쌓인다. 묶음이 없고 자리도 없으면 버려진다. */
+// 탄약 한 칸에 담기는 최대 발수. 넘치면 새 칸을 쓴다.
+export const AMMO_STACK = itemDef('magazine').uses
+
+function ammoStacks(state) { return state.inventory.filter(entry => entry.key === 'magazine' && entry.pos) }
+function ammoRoom(state) { return ammoStacks(state).reduce((sum, entry) => sum + Math.max(0, AMMO_STACK - entry.uses), 0) }
+
+/** 가방의 덜 찬 탄약 칸부터 채운다. 넣고 남은 발수를 돌려준다. */
+function topUpAmmo(state, rounds) {
+  for (const stack of ammoStacks(state)) {
+    const add = Math.min(rounds, AMMO_STACK - stack.uses)
+    if (add > 0) { stack.uses += add; rounds -= add }
+  }
+  return rounds
+}
+
 function addRounds(state, rounds, events, why) {
-  const stack = state.inventory.find(entry => entry.key === 'magazine' && entry.pos)
-  if (stack) { stack.uses += rounds; return log(state, events, `${why}탄약 ×${rounds} 확보.`) }
-  const magazine = makeItem('magazine')
-  magazine.uses = rounds
-  if (!placeAuto(state, magazine)) return log(state, events, `${why}탄약 ×${rounds} · 가방에 자리가 없어 두고 왔다.`)
-  state.inventory.push(magazine)
+  let left = topUpAmmo(state, rounds)
+  while (left > 0) {
+    const magazine = makeItem('magazine')
+    magazine.uses = Math.min(AMMO_STACK, left)
+    if (!placeAuto(state, magazine)) break
+    state.inventory.push(magazine)
+    left -= magazine.uses
+  }
+  if (left > 0) return log(state, events, `${why}탄약 ×${rounds - left} 확보 · ${left}발은 가방에 자리가 없어 두고 왔다.`)
   return log(state, events, `${why}탄약 ×${rounds} 확보.`)
 }
 
-/** 전리품을 가방에 넣을 수 있는가(탄약은 묶음이 있으면 항상). */
+/** 전리품을 가방에 넣을 수 있는가(탄약은 기존 칸에 다 들어가면 자리 없이도). */
 export function canAddLoot(state, item) {
-  if (item.key === 'magazine' && state.inventory.some(entry => entry.key === 'magazine' && entry.pos)) return true
+  if (item.key === 'magazine' && ammoRoom(state) >= item.uses) return true
   return bagHasRoom(state, item)
 }
 
@@ -1066,7 +1090,20 @@ export function canAddLoot(state, item) {
  */
 export function addLoot(state, item, events = [], pos = null) {
   const data = itemDef(item.key)
-  if (item.key === 'magazine') { addRounds(state, item.uses, events, ''); syncDeck(state); return events }
+  if (item.key === 'magazine') {
+    // 기존 칸을 채우고, 남은 발수는 이 탄약 칸 그대로 가방에 놓는다. 못 놓으면 아무것도 바꾸지 않는다.
+    const total = item.uses
+    if (ammoRoom(state) < total && !(pos ? canPlace(state, item, pos.x, pos.y, pos.rot || 0) : bagHasRoom(state, item))) return false
+    item.uses = topUpAmmo(state, total)
+    if (item.uses > 0) {
+      if (pos) item.pos = { x: pos.x, y: pos.y, rot: pos.rot || 0 }
+      else placeAuto(state, item)
+      state.inventory.push(item)
+    }
+    log(state, events, `탄약 ×${total} 확보.`)
+    syncDeck(state)
+    return events
+  }
   if (pos) {
     if (!canPlace(state, item, pos.x, pos.y, pos.rot || 0)) return false
     item.pos = { x: pos.x, y: pos.y, rot: pos.rot || 0 }
