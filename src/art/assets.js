@@ -5,7 +5,7 @@ function image(src) {
   return asset
 }
 
-export const COMBAT_BACKGROUND = image('/assets/art/city-combat-bg-v1.webp')
+export const COMBAT_BACKGROUND = image('/assets/art/city-combat-bg-v2.webp')
 export const SURVIVOR = image('/assets/art/survivor-v1.webp')
 export const SURVIVOR_INJURED = {
   arm: image('/assets/art/survivor-arm-injured-v1.webp'),
@@ -59,7 +59,7 @@ export const ENEMY_SPRITES = {
   runner: image('/assets/art/enemy-runner-v1.webp'),
   spitter: image('/assets/art/enemy-spitter-v1.webp'),
   brute: image('/assets/art/enemy-brute-v1.webp'),
-  boss: image('/assets/art/enemy-boss-v1.webp'),
+  boss: image('/assets/art/enemy-boss-v2.webp'),
   shrieker: image('/assets/art/enemy-shrieker-v1.webp'),
   crawler: image('/assets/art/enemy-crawler-v1.webp'),
   bloater: image('/assets/art/enemy-bloater-v1.webp'),
@@ -83,7 +83,7 @@ export const CARD_ART = {
   knife: '/assets/art/card-knife-v2.webp',
   quickCut: '/assets/art/card-quick-cut-v2.webp',
   deepCut: '/assets/art/card-deep-cut-v2.webp',
-  guard: '/assets/art/card-guard-v2.webp',
+  guard: '/assets/art/card-guard-v3.webp',
   parry: '/assets/art/card-parry-v2.webp',
   brace: '/assets/art/card-brace-v2.webp',
   shieldBash: '/assets/art/card-shield-bash-v2.webp',
@@ -92,7 +92,7 @@ export const CARD_ART = {
   batShove: '/assets/art/card-bat-shove-v2.webp',
   pistol: '/assets/art/card-pistol-v2.webp',
   flareShot: '/assets/art/card-flare-shot-v2.webp',
-  heal: '/assets/art/card-heal-v2.webp',
+  heal: '/assets/art/card-heal-v3.webp',
   painkiller: '/assets/art/card-painkiller-v2.webp',
   rush: '/assets/art/card-rush-v2.webp',
   adrenaline: '/assets/art/card-adrenaline-v2.webp',
@@ -104,7 +104,7 @@ export const CARD_ART = {
   quiet: '/assets/art/card-quiet-v2.webp',
   focus: '/assets/art/card-focus-v3.webp',
   search: '/assets/art/card-search-v2.webp',
-  slash: '/assets/art/card-slash-v1.webp',
+  slash: '/assets/art/card-slash-v3.webp',
   hamstring: '/assets/art/card-hamstring-v1.webp',
   thrust: '/assets/art/card-thrust-v1.webp',
   sweep: '/assets/art/card-sweep-v1.webp',

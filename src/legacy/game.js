@@ -1184,6 +1184,56 @@ const displayFont = (() => {
       return parts.join(" · ");
     }
 
+    // 캐릭터 선택은 전투 state가 생기기 전이므로, 영구 카드 정의만으로 시작 기술을 설명한다.
+    function baseCardSummary(card) {
+      const data = CARDS[card.key];
+      const u = card.upgraded;
+      const lines = [];
+      if (data.type === "attack") {
+        const details = [];
+        if (data.burn) details.push(`화상 ${data.burn(u)}`);
+        if (data.block) details.push(`방어도 +${data.block(u)}`);
+        if (data.heal) details.push(`체력 +${data.heal(u)}`);
+        if (data.stagger) details.push("경직");
+        if (data.limbBonus) details.push(`사지 +${data.limbBonus(u)}`);
+        const hits = rules.hitCount(card);
+        const damage = data.damage ? data.damage(u) : 0;
+        const prefix = data.delayed ? "예약 · " : "";
+        lines.push(data.damage
+          ? `${prefix}${data.target === "all" ? "모든 적 " : ""}피해 ${damage}${hits > 1 ? `×${hits}` : ""}${details.length ? ` · ${details.join(" · ")}` : ""}`
+          : `${prefix}${data.target === "all" ? "모든 적 " : ""}${details.join(" · ")}`);
+      } else {
+        const fx = skillEffects(card.key, u);
+        const effects = [];
+        if (fx.block) effects.push(`방어도 +${fx.block}${data.choice ? " 또는 장비 교체" : ""}`);
+        if (fx.heal) effects.push(`체력 +${fx.heal}`);
+        if (fx.cure) effects.push(`감염 −${fx.cure}`);
+        if (fx.noiseDown) effects.push(`소음 −${fx.noiseDown}`);
+        if (fx.strength) effects.push(`이번 전투 공격 +${fx.strength}`);
+        if (fx.energy) effects.push(`행동력 +${fx.energy}`);
+        if (fx.draw) effects.push(`${fx.draw}장 뽑기`);
+        if (fx.numb) effects.push("이번 턴 부상 무시");
+        if (data.noise) effects.push(`소음 +${data.noise}`);
+        lines.push(`${data.delayed ? "예약 · " : ""}${effects.join(" · ")}`);
+      }
+      if (data.gamble) {
+        const resolveEffect = (value) => typeof value === "function" ? value(u) : value || {};
+        if (data.gamble.before) lines.push("동전 성공 시 발동 · 실패 시 불발");
+        else {
+          const win = effectSummary(resolveEffect(data.gamble.win));
+          const lose = effectSummary(resolveEffect(data.gamble.lose));
+          if (win) lines.push(`동전 성공: ${win}`);
+          if (lose) lines.push(`동전 실패: ${lose}`);
+        }
+      }
+      const costs = [];
+      if (data.noise && data.type === "attack") costs.push(`소음 +${data.noise}`);
+      if (data.ammo) costs.push(`탄약 −${data.ammo}`);
+      if (data.exhaust) costs.push("소멸");
+      if (costs.length) lines.push(costs.join(" · "));
+      return lines.filter(Boolean).join("\n");
+    }
+
     const hitCount = rules.hitCount;
 
     function selectedCard() {
@@ -1365,7 +1415,13 @@ const displayFont = (() => {
         subtitle: "CHOOSE SURVIVOR",
         description: "시작 체력과 덱, 전투 규칙이 달라집니다.",
         options: Object.entries(CLASSES).map(([id, cls]) => {
-          const skills = cls.skills.map(([key, count]) => `${CARDS[key].name} ×${count}`);
+          const skills = cls.skills.map(([key, count]) => ({
+            key,
+            count,
+            name: CARDS[key].name,
+            cost: CARDS[key].cost,
+            description: baseCardSummary({ key, upgraded: false })
+          }));
           const inventory = cls.inventory.map((key) => itemDef(key).name);
           const trait = classTraitText(cls).replace(/^특성:\s*/, "");
           return {
@@ -1376,7 +1432,7 @@ const displayFont = (() => {
             trait,
             skills,
             inventory,
-            text: `${cls.tagline}\n${trait}\n시작 기술: ${skills.join(" · ")}${inventory.length ? ` / 장비: ${inventory.join(" · ")}` : ""}`,
+            text: `${cls.tagline}\n${trait}\n시작 기술: ${skills.map((skill) => `${skill.name} ×${skill.count}`).join(" · ")}${inventory.length ? ` / 장비: ${inventory.join(" · ")}` : ""}`,
             action: () => newGame(id)
           };
         })
@@ -2317,16 +2373,18 @@ const displayFont = (() => {
         });
         $("overlay").append(button("건너뛰기", chooseRoute, "modal-aside"));
       } else if (m.type === "inventory") {
-        content.className = "bag-screen";
+        content.className = `bag-screen${m.readOnly ? " inventory-readonly" : ""}`;
         root.append(hudStrip(() => openModal({
           type: "deck",
           title: `생존 덱 / ${state.deck.length}장`,
-          backToInventory: () => showInventory(m.continue, m.back, m.combatDone, m.incoming, m.noReturn)
+          backToInventory: () => showInventory(m.continue, m.back, m.combatDone, m.incoming, m.noReturn, m.readOnly)
         })));
         content.append(bagLayout(m));
         // 새 전리품을 놓지 않고 나가면 두고 간다.
         const leave = (fn) => () => { dropIncoming(m); fn(); };
-        if (m.combatDone) {
+        if (m.readOnly) {
+          footer.append(el("span", "", "확인 전용 · 전투 중에는 장비를 바꿀 수 없습니다."), button("닫기 · Esc", closeModal, "button primary"));
+        } else if (m.combatDone) {
           footer.append(button("정비 완료 · Esc", inventoryBack, "button primary"));
         } else if (m.continue) {
           footer.append(
@@ -2363,6 +2421,12 @@ const displayFont = (() => {
           button("확인하고 계속 · Space", m.continue, "button primary")
         );
         content.append(card, details);
+      } else if (m.type === "cardDetail") {
+        content.className = "card-inspect-layout";
+        const inspected = modalCard(m.card);
+        inspected.classList.add("card-inspect-card");
+        content.append(inspected);
+        footer.append(el("span", "", "카드의 실제 비용과 현재 효과입니다."), button("닫기 · Esc", closeModal, "button primary"));
       } else if (m.type === "body") {
         content.className = "limb-list body-screen";
         content.append(bodyDiagram(state.limbs));
@@ -2385,7 +2449,7 @@ const displayFont = (() => {
       } else if (m.type === "help") {
         content.className = "help-grid";
         const sections = [
-          ["조작", "카드 선택 → 전투 화면의 대상 클릭.\n공격: 적 몸통 또는 사지 클릭. 방어·회복: 전투 화면 클릭.\n1–9 / 0은 카드를 선택합니다.\nEsc / 우클릭: 카드 선택 취소.\nSpace: 턴 종료. 카드 선택 중에는 선택 취소."],
+          ["조작", "카드 선택 → 전투 화면의 대상 클릭.\n공격: 적 몸통 또는 사지 클릭. 방어·회복: 전투 화면 클릭.\n1–9 / 0은 카드를 선택합니다. 카드 우클릭은 상세 보기.\nEsc / 전장 우클릭: 카드 선택 취소.\nSpace: 턴 종료. 카드 선택 중에는 선택 취소."],
           ["몸통과 사지", "몸통 피해: 적 체력 감소. 0이면 처치.\n사지 피해: 해당 사지 내구도만 감소. 0이면 기능 파괴.\n초과 피해는 몸통으로 넘어가지 않음.\n파괴 효과는 현재 턴 의도에도 즉시 반영.\n전체 공격과 화상은 몸통에 적용.\n'사지 +N' 카드는 사지를 노릴 때만 추가 피해.\n연타(×2) 카드는 같은 대상을 두 번 때립니다."],
           ["적의 행동", "경직: 다음 적 행동을 통째로 건너뜀. 풀린 적은 다음 한 턴 동안 경직 저항(다시 걸리지 않음).\n울부짖기: 소음 증가. 증원 판정에 바로 반영.\n재생: 적 체력 회복. 부위를 파괴하면 사라짐.\n붙잡기: 체력 피해를 받으면 다음 턴 드로우 −1 (최대 −2).\n의도 아이콘과 수치로 구분합니다. 적 상태창에 마우스를 올리면 행동 설명이 나옵니다."],
           ["상태", `방어도는 적 공격을 흡수한 만큼 감소하며 다음 내 턴 시작에 사라집니다.\n${BURN_TEXT}\n감염 2마다 내 턴 시작 체력 피해 1. 방어 무시.
@@ -2396,7 +2460,7 @@ const displayFont = (() => {
           ["도박 카드", "세열 수류탄·올인·과다 투여는 효과 뒤에, 속사는 효과 전에 동전을 던집니다.\n앞면·뒷면을 고르고, 맞히면 카드에 적힌 성공 효과, 틀리면 실패 효과.\n실패 효과는 자해·사지 부상·손패 버림·감염·증원처럼 되돌릴 수 없습니다."],
           ["개인 정비", "3 AP 스킬. 사용 시 방어도 10 또는 장비 교체 중 하나.\n장비 교체: 손에서 내려놓은 장비의 카드는 손패·더미에서 사라지고, 새 장비의 카드가 뽑기 더미에 섞입니다.\n전투 중에는 구급상자를 직접 쓸 수 없습니다."],
           ["경로", "은신처: 회복과 사지 치료.\n정비소: 카드 1장 영구 강화.\n낯선 생존자: 장비 없이 쓰는 스킬 카드 1장 획득.\n군수 창고: 동전 성공 시 무기·탄약, 실패 시 체력 −6."],
-          ["소리·탐색", "D 덱 / C 도감 / B 신체 / L 기록 / H 규칙 / O 설정 / M 음소거.\n덱과 강화 화면은 휠 또는 ↑↓ 키로 스크롤.\n도감에서 모든 카드·아이템과 출처를 확인.\n소리·연출 설정은 이 기기에 저장됩니다.\n체력·감염·사지 부상은 전투 사이에 유지.\n진행은 매 턴 시작에 자동 저장. 새로고침하면 마지막 턴 시작으로 돌아갑니다."]
+          ["소리·탐색", "D 덱 / C 도감 / B 신체 / I 인벤토리 / L 기록 / H 규칙 / O 설정 / M 음소거.\n전투 중 인벤토리는 확인 전용입니다.\n덱과 강화 화면은 휠 또는 ↑↓ 키로 스크롤.\n도감에서 모든 카드·아이템과 출처를 확인.\n소리·연출 설정은 이 기기에 저장됩니다.\n체력·감염·사지 부상은 전투 사이에 유지.\n진행은 매 턴 시작에 자동 저장. 새로고침하면 마지막 턴 시작으로 돌아갑니다."]
         ];
         sections.forEach(([heading, text]) => {
           const section = el("section");
@@ -2450,17 +2514,29 @@ const displayFont = (() => {
             const details = el("div", "class-hover-details");
             const detailRow = (icon, label, copy) => {
               const row = el("div", "class-info-row");
+              const copyNode = copy instanceof Node ? copy : el("p", "class-info-copy", copy);
+              copyNode.classList.add("class-info-copy");
               row.append(
                 uiIcon(icon),
                 el("strong", "class-info-label", label),
                 el("small", "class-info-hint", "HOVER"),
-                el("p", "class-info-copy", copy)
+                copyNode
               );
               return row;
             };
+            const startCards = el("div", "class-start-cards");
+            for (const skill of option.skills) {
+              const card = el("article", `class-start-card rarity-${CARDS[skill.key].rarity}`);
+              card.append(
+                el("span", "class-start-cost", `${skill.cost} AP`),
+                el("strong", "", `${skill.name} ×${skill.count}`),
+                el("p", "", skill.description)
+              );
+              startCards.append(card);
+            }
             details.append(
               detailRow("log", "고유 규칙", option.trait),
-              detailRow("cards", "시작 기술", option.skills.join(" · ")),
+              detailRow("cards", "시작 기술", startCards),
               detailRow("backpack", "소지품", (option.inventory.length ? option.inventory : ["없음"]).join(" · "))
             );
 
@@ -2670,8 +2746,9 @@ const displayFont = (() => {
       // 강화한 장비는 카드와 같은 강화 견장을 단다.
       if (item.upgraded) { tile.classList.add("upgraded"); appendUpgradeMark(tile, true); }
       if (item.uses != null) tile.append(el("span", "bag-uses", `×${item.uses}`));
+      if (m.readOnly) tile.classList.add("readonly");
       if (bagSelected === ref) tile.classList.add("selected");
-      tile.addEventListener("pointerdown", (event) => beginBagDrag(event, m, ref));
+      if (!m.readOnly) tile.addEventListener("pointerdown", (event) => beginBagDrag(event, m, ref));
       bindItemCardTooltip(tile, data);
       return tile;
     }
@@ -2689,7 +2766,7 @@ const displayFont = (() => {
         box.append(el("small", "", label));
         if (item) box.append(bagTile(m, item, item.uid, 0));
         else box.append(el("span", "hand-empty", !rules.canEquip(state) ? "팔 없음" : injured ? "부상" : "빈손"));
-        box.addEventListener("click", (event) => {
+        if (!m.readOnly) box.addEventListener("click", (event) => {
           if (event.target.closest(".bag-item") || bagSelected == null || bagDrag) return;
           equipRef(m, bagSelected, box.dataset.slot);
         });
@@ -2706,23 +2783,29 @@ const displayFont = (() => {
           const cell = el("div", "bag-cell");
           cell.dataset.x = x;
           cell.dataset.y = y;
-          cell.addEventListener("click", () => { if (bagSelected != null && !bagDrag) dropAt(m, bagSelected, x, y); });
+          if (!m.readOnly) cell.addEventListener("click", () => { if (bagSelected != null && !bagDrag) dropAt(m, bagSelected, x, y); });
           grid.append(cell);
         }
       }
       for (const item of state.inventory) if (item.pos) grid.append(bagTile(m, item, item.uid));
 
       const side = el("div", "bag-side");
-      if (m.incoming) {
+      if (m.incoming && !m.readOnly) {
         const box = el("div", "bag-incoming");
         box.append(el("small", "", "전리품"), bagTile(m, m.incoming, "incoming"));
         side.append(box);
       }
       const column = el("div", "bag-side-col");
-      const trash = el("div", "bag-trash");
-      trash.append(uiIcon("discard"), el("span", "", "버리기"));
-      trash.addEventListener("click", () => { if (bagSelected != null && !bagDrag) discardRef(m, bagSelected); });
-      column.append(trash, bagDetail(m));
+      if (m.readOnly) {
+        const note = el("div", "bag-readonly-note");
+        note.append(uiIcon("eye"), el("strong", "", "현재 소지품"), el("p", "", "아이템에 마우스를 올리면 제공 카드와 크기를 확인할 수 있습니다."));
+        column.append(note);
+      } else {
+        const trash = el("div", "bag-trash");
+        trash.append(uiIcon("discard"), el("span", "", "버리기"));
+        trash.addEventListener("click", () => { if (bagSelected != null && !bagDrag) discardRef(m, bagSelected); });
+        column.append(trash, bagDetail(m));
+      }
       side.append(column);
 
       wrap.append(hands, grid, side);
@@ -2955,13 +3038,13 @@ const displayFont = (() => {
       }
     }
 
-    function showInventory(continueAction = null, backAction = null, combatDone = null, incoming = null, noReturn = false) {
+    function showInventory(continueAction = null, backAction = null, combatDone = null, incoming = null, noReturn = false, readOnly = false) {
       bagSelected = incoming ? "incoming" : null;
       bagDrag = null;
       openModal({
         type: "inventory",
-        title: combatDone ? "개인 정비" : "장비와 물자",
-        subtitle: combatDone ? "IN COMBAT" : "PREPARATION",
+        title: readOnly ? "현재 장비와 물자" : combatDone ? "개인 정비" : "장비와 물자",
+        subtitle: readOnly ? "COMBAT INVENTORY" : combatDone ? "IN COMBAT" : "PREPARATION",
         continue: typeof continueAction === "function" ? continueAction : null,
         back: typeof backAction === "function" ? backAction : null,
         // 전투 중 장비 교체: 닫으면 카드 실행이 이어진다.
@@ -2970,13 +3053,19 @@ const displayFont = (() => {
         incoming: incoming || null,
         incomingRot: 0,
         // 경로를 이미 골랐다: 되돌아갈 곳이 없다.
-        noReturn
+        noReturn,
+        readOnly
       });
+    }
+
+    function showCombatInventory() {
+      if (ready()) showInventory(null, null, null, null, false, true);
     }
 
     // Esc는 항상 직전 준비 화면으로 돌아간다. 다음 구역 이동은 버튼으로만 실행한다.
     function inventoryBack() {
       if (modal?.type !== "inventory" || modal.noReturn) return;
+      if (modal.readOnly) { closeModal(); return; }
       dropIncoming(modal);
       if (modal.combatDone) { const done = modal.combatDone; closeModal(); done(); }
       else if (modal.back) modal.back();
@@ -3444,7 +3533,7 @@ const displayFont = (() => {
       bindDynamicTip(exhaustPile, "소멸 더미", `${state.exhausted.length}장\n클릭해서 펼치기`);
       bindDynamicTip(discardPile, "버림 더미", `${state.discard.length}장\n클릭해서 펼치기`);
 
-      for (const id of ["endTurn", "bodyButton", "deckButton", "codexButton", "helpButton", "settingsButton", "logButton", "heroButton"]) {
+      for (const id of ["endTurn", "bodyButton", "inventoryButton", "deckButton", "codexButton", "helpButton", "settingsButton", "logButton", "heroButton"]) {
         $(id).disabled = !combat;
       }
       $("allTarget").hidden = true;
@@ -3802,6 +3891,11 @@ const displayFont = (() => {
           hoverCard = card.id;
           updatePreview();
         });
+        node.addEventListener("contextmenu", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          openModal({ type: "cardDetail", title: info.name, subtitle: "CARD DETAIL", card, closable: true });
+        });
         node.addEventListener("pointerleave", () => {
           if (injuryLock) hideTooltip();
           if (!selectedCard()) {
@@ -3913,7 +4007,7 @@ const displayFont = (() => {
 
       const digit = digitIndex(event);
       const recognized = digit >= 0 || [
-        "Space", "Escape", "KeyD", "KeyB", "KeyC", "KeyH", "KeyL",
+        "Space", "Escape", "KeyD", "KeyB", "KeyI", "KeyC", "KeyH", "KeyL",
         "KeyO"
       ].includes(event.code);
 
@@ -3978,6 +4072,9 @@ const displayFont = (() => {
         case "KeyB":
           showBody();
           break;
+        case "KeyI":
+          showCombatInventory();
+          break;
         case "KeyH":
           showHelp();
           break;
@@ -4022,6 +4119,7 @@ const displayFont = (() => {
 
     $("endTurn").addEventListener("click", endTurn);
     $("deckButton").addEventListener("click", showDeck);
+    $("inventoryButton").addEventListener("click", showCombatInventory);
     $("drawPile").addEventListener("click", () => showCombatPile("draw"));
     $("exhaustPile").addEventListener("click", () => showCombatPile("exhausted"));
     $("discardPile").addEventListener("click", () => showCombatPile("discard"));
