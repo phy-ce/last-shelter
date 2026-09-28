@@ -1,40 +1,40 @@
 export const CARDS = {
       quickCut: {
         name: "빠른 베기", rarity: "common", cost: 0, type: "attack", target: "single",
-        damage: (u) => u ? 9 : 6, text: (u, p = 0) => `피해 ${Math.max(0, (u ? 9 : 6) + p)}.`
+        damage: (u) => u ? 5 : 4, text: (u, p = 0) => `피해 ${Math.max(0, (u ? 5 : 4) + p)}.`
       },
       deepCut: {
         name: "깊게 찌르기", rarity: "uncommon", cost: 1, type: "attack", target: "single",
-        damage: (u) => u ? 14 : 10, text: (u, p = 0) => `피해 ${Math.max(0, (u ? 14 : 10) + p)}.`
+        damage: (u) => u ? 12 : 10, text: (u, p = 0) => `피해 ${Math.max(0, (u ? 12 : 10) + p)}.`
       },
       brace: {
         name: "방패 세우기", rarity: "uncommon", cost: 1, type: "skill", target: "self",
-        text: (u) => `방어도 ${u ? 12 : 9} 획득.`,
-        effects: (u) => ({ sound: "guard", block: u ? 12 : 9 })
+        text: (u) => `방어도 ${u ? 11 : 9} 획득.`,
+        effects: (u) => ({ sound: "guard", block: u ? 11 : 9 })
       },
       shieldBash: {
         name: "방패 밀치기", rarity: "uncommon", cost: 1, type: "attack", target: "single",
-        damage: (u) => u ? 10 : 7, block: (u) => u ? 6 : 4,
-        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 10 : 7) + p)}. 방어도 ${u ? 6 : 4}.`
+        damage: (u) => u ? 9 : 7, block: (u) => u ? 5 : 4,
+        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 9 : 7) + p)}. 방어도 ${u ? 5 : 4}.`
       },
       batSwing: {
         name: "풀스윙", rarity: "common", cost: 1, type: "attack", target: "single",
-        damage: (u) => u ? 15 : 11, text: (u, p = 0) => `피해 ${Math.max(0, (u ? 15 : 11) + p)}.`
+        damage: (u) => u ? 14 : 11, text: (u, p = 0) => `피해 ${Math.max(0, (u ? 14 : 11) + p)}.`
       },
       batShove: {
         name: "밀어내기", rarity: "common", cost: 1, type: "attack", target: "single",
-        damage: (u) => u ? 10 : 7, block: (u) => u ? 7 : 5,
-        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 10 : 7) + p)}. 방어도 ${u ? 7 : 5}.`
+        damage: (u) => u ? 9 : 7, block: (u) => u ? 6 : 5,
+        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 9 : 7) + p)}. 방어도 ${u ? 6 : 5}.`
       },
       flareShot: {
         name: "조명탄 사격", rarity: "rare", cost: 1, type: "attack", target: "all",
-        damage: (u) => u ? 11 : 7, burn: (u) => u ? 4 : 2, noise: 4, ammo: 1,
-        text: (u, p = 0) => `모든 적에게 피해 ${Math.max(0, (u ? 11 : 7) + p)}, 화상 ${u ? 4 : 2}.\n탄약 1발 소모 · 소음 4 증가.`
+        damage: (u) => u ? 13 : 9, burn: (u) => u ? 4 : 2, noise: 4, ammo: 1,
+        text: (u, p = 0) => `모든 적에게 피해 ${Math.max(0, (u ? 13 : 9) + p)}, 화상 ${u ? 4 : 2}.\n탄약 1발 소모 · 소음 4 증가.`
       },
       painkiller: {
         name: "진통제", rarity: "common", cost: 0, type: "skill", target: "self",
-        text: (u) => `체력 ${u ? 5 : 3} 회복.\n이번 턴 사지 부상 무시: 팔 부상의 공격 −2가 사라지고, 잠긴 장비 카드를 쓸 수 있다.`,
-        effects: (u) => ({ sound: "heal", heal: u ? 5 : 3, numb: true })
+        text: (u) => `체력 ${u ? 4 : 3} 회복.\n이번 턴 사지 부상 무시: 팔 부상의 공격 −2가 사라지고, 잠긴 장비 카드를 쓸 수 있다.`,
+        effects: (u) => ({ sound: "heal", heal: u ? 4 : 3, numb: true })
       },
       rush: {
         name: "각성", rarity: "uncommon", cost: 0, type: "skill", target: "self",
@@ -43,13 +43,13 @@ export const CARDS = {
       },
       smoke: {
         name: "연막", rarity: "uncommon", cost: 1, type: "skill", target: "self",
-        text: (u) => `방어도 ${u ? 9 : 6}. 소음 ${u ? 8 : 6} 감소.`,
-        effects: (u) => ({ sound: "quiet", block: u ? 9 : 6, noiseDown: u ? 8 : 6 })
+        text: (u) => `방어도 ${u ? 8 : 6}. 소음 ${u ? 7 : 6} 감소.`,
+        effects: (u) => ({ sound: "quiet", block: u ? 8 : 6, noiseDown: u ? 7 : 6 })
       },
       grenade: {
         name: "세열 수류탄", rarity: "rare", cost: 2, type: "attack", target: "all",
-        damage: (u) => u ? 30 : 24, noise: 5,
-        text: (u, p = 0) => `모든 적에게 피해 ${Math.max(0, (u ? 30 : 24) + p)}.\n동전 실패 시 자신에게 피해 18. 소음 5.`,
+        damage: (u) => u ? 28 : 24, noise: 5,
+        text: (u, p = 0) => `모든 적에게 피해 ${Math.max(0, (u ? 28 : 24) + p)}.\n동전 실패 시 자신에게 피해 18. 소음 5.`,
         gamble: {
           title: "파편 역류", description: "폭발 반경에서 벗어날 수 있을까.",
           success: "회피", failure: "체력 18 피해",
@@ -58,8 +58,8 @@ export const CARDS = {
       },
       adrenaline: {
         name: "아드레날린", rarity: "rare", cost: 0, type: "power", target: "self",
-        text: (u) => `이번 전투 공격 피해 ${u ? 5 : 3} 증가. 방어도 ${u ? 8 : 5}.`,
-        effects: (u) => ({ strength: u ? 5 : 3, block: u ? 8 : 5 })
+        text: (u) => `이번 전투 공격 피해 ${u ? 4 : 3} 증가. 방어도 ${u ? 7 : 5}.`,
+        effects: (u) => ({ strength: u ? 4 : 3, block: u ? 7 : 5 })
       },
       parry: {
         name: "패링",
@@ -67,8 +67,8 @@ export const CARDS = {
         cost: 1,
         type: "skill",
         target: "self",
-        text: (u) => `방어도 ${u ? 12 : 8} 획득.\n쇠지레 장비 카드.`,
-        effects: (u) => ({ sound: "guard", block: u ? 12 : 8 })
+        text: (u) => `방어도 ${u ? 9 : 7} 획득.\n쇠지레 장비 카드.`,
+        effects: (u) => ({ sound: "guard", block: u ? 9 : 7 })
       },
       smash: {
         name: "내려치기",
@@ -76,8 +76,8 @@ export const CARDS = {
         cost: 1,
         type: "attack",
         target: "single",
-        damage: (u) => u ? 13 : 9,
-        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 13 : 9) + p)}.\n쇠지레 장비 카드.`
+        damage: (u) => u ? 10 : 8,
+        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 10 : 8) + p)}.\n쇠지레 장비 카드.`
       },
       knife: {
         name: "생존용 칼",
@@ -85,8 +85,8 @@ export const CARDS = {
         cost: 1,
         type: "attack",
         target: "single",
-        damage: (u) => u ? 8 : 5, limbBonus: (u) => u ? 3 : 2,
-        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 8 : 5) + p)}.\n사지를 노리면 피해 ${u ? 3 : 2} 추가.`
+        damage: (u) => u ? 7 : 5, limbBonus: (u) => u ? 3 : 2,
+        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 7 : 5) + p)}.\n사지를 노리면 피해 ${u ? 3 : 2} 추가.`
       },
       guard: {
         name: "급조 바리케이드",
@@ -94,8 +94,8 @@ export const CARDS = {
         cost: 1,
         type: "skill",
         target: "self",
-        text: (u) => `방어도 ${u ? 8 : 5} 획득.`,
-        effects: (u) => ({ sound: "guard", block: u ? 8 : 5 })
+        text: (u) => `방어도 ${u ? 7 : 5} 획득.`,
+        effects: (u) => ({ sound: "guard", block: u ? 7 : 5 })
       },
       pistol: {
         name: "권총 사격",
@@ -103,9 +103,9 @@ export const CARDS = {
         cost: 1,
         type: "attack",
         target: "single",
-        damage: (u) => u ? 18 : 13,
+        damage: (u) => u ? 22 : 16,
         noise: 3, ammo: 1,
-        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 18 : 13) + p)}.\n탄약 1발 소모 · 소음 3 증가.`
+        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 22 : 16) + p)}.\n탄약 1발 소모 · 소음 3 증가.`
       },
       heal: {
         name: "응급 처치",
@@ -113,8 +113,8 @@ export const CARDS = {
         cost: 1,
         type: "skill",
         target: "self",
-        text: (u) => `체력 ${u ? 9 : 6} 회복.\n감염 ${u ? 3 : 2} 감소.`,
-        effects: (u) => ({ sound: "heal", heal: u ? 9 : 6, cure: u ? 3 : 2 })
+        text: (u) => `체력 ${u ? 5 : 4} 회복.\n감염 ${u ? 3 : 2} 감소.`,
+        effects: (u) => ({ sound: "heal", heal: u ? 5 : 4, cure: u ? 3 : 2 })
       },
       shotgun: {
         name: "산탄 사격",
@@ -122,9 +122,9 @@ export const CARDS = {
         cost: 2,
         type: "attack",
         target: "all",
-        damage: (u) => u ? 13 : 9,
+        damage: (u) => u ? 16 : 13,
         noise: 5, ammo: 2,
-        text: (u, p = 0) => `모든 적에게 피해 ${Math.max(0, (u ? 13 : 9) + p)}.\n탄약 2발 소모 · 소음 5 증가.`
+        text: (u, p = 0) => `모든 적에게 피해 ${Math.max(0, (u ? 16 : 13) + p)}.\n탄약 2발 소모 · 소음 5 증가.`
       },
       quiet: {
         name: "은밀한 이동",
@@ -132,8 +132,8 @@ export const CARDS = {
         cost: 1,
         type: "skill",
         target: "self",
-        text: (u) => `방어도 ${u ? 8 : 5} 획득.\n소음 ${u ? 6 : 4} 감소.`,
-        effects: (u) => ({ sound: "quiet", block: u ? 8 : 5, noiseDown: u ? 6 : 4 })
+        text: (u) => `방어도 ${u ? 7 : 5} 획득.\n소음 ${u ? 5 : 4} 감소.`,
+        effects: (u) => ({ sound: "quiet", block: u ? 7 : 5, noiseDown: u ? 5 : 4 })
       },
       axe: {
         name: "소방 도끼",
@@ -150,11 +150,11 @@ export const CARDS = {
         cost: 1,
         type: "attack",
         target: "all",
-        damage: (u) => u ? 10 : 6,
-        burn: (u) => u ? 5 : 3,
+        damage: (u) => u ? 9 : 6,
+        burn: (u) => u ? 4 : 3,
         noise: 2,
         exhaust: true,
-        text: (u, p = 0) => `모든 적에게 피해 ${Math.max(0, (u ? 10 : 6) + p)}, 화상 ${u ? 5 : 3}.\n소음 2 증가. 소멸.`
+        text: (u, p = 0) => `모든 적에게 피해 ${Math.max(0, (u ? 9 : 6) + p)}, 화상 ${u ? 4 : 3}.\n소음 2 증가. 소멸.`
       },
       focus: {
         name: "살아남을 의지",
@@ -163,8 +163,8 @@ export const CARDS = {
         type: "power",
         target: "self",
         exhaust: true,
-        text: (u) => `이번 전투 공격 피해 ${u ? 4 : 2} 증가.\n소멸.`,
-        effects: (u) => ({ strength: u ? 4 : 2 })
+        text: (u) => `이번 전투 공격 피해 ${u ? 3 : 2} 증가.\n소멸.`,
+        effects: (u) => ({ strength: u ? 3 : 2 })
       },
       search: {
         name: "폐허 수색",
@@ -180,23 +180,23 @@ export const CARDS = {
       // ── 추가 무기 카드 ──
       slash: {
         name: "넓게 베기", rarity: "uncommon", cost: 1, type: "attack", target: "all",
-        damage: (u) => u ? 11 : 8,
-        text: (u, p = 0) => `모든 적에게 피해 ${Math.max(0, (u ? 11 : 8) + p)}.\n마체테 장비 카드.`
+        damage: (u) => u ? 8 : 6,
+        text: (u, p = 0) => `모든 적에게 피해 ${Math.max(0, (u ? 8 : 6) + p)}.\n마체테 장비 카드.`
       },
       hamstring: {
         name: "오금 베기", rarity: "uncommon", cost: 1, type: "attack", target: "single",
-        damage: (u) => u ? 10 : 8, limbBonus: (u) => u ? 8 : 6,
-        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 10 : 8) + p)}.\n사지를 노리면 피해 ${u ? 8 : 6} 추가.`
+        damage: (u) => u ? 9 : 8, limbBonus: (u) => u ? 7 : 6,
+        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 9 : 8) + p)}.\n사지를 노리면 피해 ${u ? 7 : 6} 추가.`
       },
       thrust: {
         name: "연속 찌르기", rarity: "uncommon", cost: 2, type: "attack", target: "single",
-        damage: (u) => u ? 9 : 7, hits: () => 2,
-        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 9 : 7) + p)} × 2회.\n개조 창 장비 카드.`
+        damage: (u) => u ? 8 : 7, hits: () => 2,
+        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 8 : 7) + p)} × 2회.\n개조 창 장비 카드.`
       },
       sweep: {
         name: "휘둘러 넘기기", rarity: "uncommon", cost: 2, type: "attack", target: "single",
-        damage: (u) => u ? 10 : 7, stagger: true,
-        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 10 : 7) + p)}.\n대상 경직: 다음 적 행동을 건너뜀.`
+        damage: (u) => u ? 9 : 7, stagger: true,
+        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 9 : 7) + p)}.\n대상 경직: 다음 적 행동을 건너뜀.`
       },
       hammerBlow: {
         name: "해머 강타", rarity: "rare", cost: 3, type: "attack", target: "single",
@@ -205,15 +205,15 @@ export const CARDS = {
       },
       bolt: {
         name: "석궁 사격", rarity: "rare", cost: 1, type: "attack", target: "single",
-        damage: (u) => u ? 19 : 14, ammo: 1,
-        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 19 : 14) + p)}.\n탄약 1발 소모 · 소음 없음.`
+        damage: (u) => u ? 17 : 14, ammo: 1,
+        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 17 : 14) + p)}.\n탄약 1발 소모 · 소음 없음.`
       },
 
       // ── 추가 소모품 카드 ──
       antibiotic: {
         name: "항생제", rarity: "uncommon", cost: 1, type: "skill", target: "self",
-        text: (u) => `감염 ${u ? 7 : 5} 감소. 체력 ${u ? 3 : 2} 회복.`,
-        effects: (u) => ({ sound: "heal", cure: u ? 7 : 5, heal: u ? 3 : 2 })
+        text: (u) => `감염 ${u ? 6 : 5} 감소. 체력 ${u ? 3 : 2} 회복.`,
+        effects: (u) => ({ sound: "heal", cure: u ? 6 : 5, heal: u ? 3 : 2 })
       },
       flashbang: {
         name: "섬광탄", rarity: "rare", cost: 2, type: "attack", target: "all",
@@ -224,24 +224,24 @@ export const CARDS = {
       // ── 추가 스킬 카드 (장비 없이 독립 획득) ──
       secondWind: {
         name: "숨 고르기", rarity: "common", cost: 1, type: "skill", target: "self",
-        text: (u) => `방어도 ${u ? 6 : 4} 획득. 카드 1장 뽑기.`,
-        effects: (u) => ({ sound: "guard", block: u ? 6 : 4, draw: 1 })
+        text: (u) => `방어도 ${u ? 5 : 4} 획득. 카드 1장 뽑기.`,
+        effects: (u) => ({ sound: "guard", block: u ? 5 : 4, draw: 1 })
       },
       feint: {
         name: "허를 찌르기", rarity: "rare", cost: 1, upgradedCost: 0, type: "attack", target: "single",
-        damage: (u) => u ? 5 : 3, stagger: true, exhaust: true,
-        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 5 : 3) + p)}. 대상 경직.\n소멸.`
+        damage: (u) => u ? 4 : 3, stagger: true, exhaust: true,
+        text: (u, p = 0) => `피해 ${Math.max(0, (u ? 4 : 3) + p)}. 대상 경직.\n소멸.`
       },
 
       // ── 도박 카드: 기본 효과 뒤에 동전을 던진다. 성공/실패 효과는 gamble.win / gamble.lose ──
       fanFire: {
         name: "속사", rarity: "rare", cost: 1, type: "attack", target: "single",
-        damage: (u) => u ? 26 : 20, ammo: 1, noise: 3,
-        text: (u, p = 0) => `동전을 먼저 던진다.\n성공: 피해 ${Math.max(0, (u ? 26 : 20) + p)}. 실패: 불발.\n탄약 1발 · 소음 3.`,
+        damage: (u) => u ? 28 : 24, ammo: 1, noise: 3,
+        text: (u, p = 0) => `동전을 먼저 던진다.\n성공: 피해 ${Math.max(0, (u ? 28 : 24) + p)}. 실패: 불발.\n탄약 1발 · 소음 3.`,
         gamble: {
           before: true,
           title: "실린더가 돈다", description: "다음 약실에 탄이 있을까.",
-          success: (u) => `피해 ${u ? 26 : 20}`, failure: "불발 · 탄약만 소모",
+          success: (u) => `피해 ${u ? 24 : 20}`, failure: "불발 · 탄약만 소모",
           win: {}, lose: {}
         }
       },
@@ -257,30 +257,30 @@ export const CARDS = {
       },
       overdose: {
         name: "과다 투여", rarity: "rare", cost: 0, type: "power", target: "self", exhaust: true,
-        text: (u) => `동전 성공: 이번 전투 공격 +${u ? 7 : 5}.\n실패: 감염 +8 · 체력 8 피해. 소멸.`,
+        text: (u) => `동전 성공: 이번 전투 공격 +${u ? 6 : 5}.\n실패: 감염 +8 · 체력 8 피해. 소멸.`,
         effects: () => ({ gambleOnly: true }),
         gamble: {
           title: "정체불명의 혈청", description: "몸이 받아들일까.",
-          success: (u) => `공격 +${u ? 7 : 5}`, failure: "감염 +8 · 체력 8 피해",
-          win: (u) => ({ strength: u ? 7 : 5 }), lose: { infection: 8, selfDamage: 8 }
+          success: (u) => `공격 +${u ? 6 : 5}`, failure: "감염 +8 · 체력 8 피해",
+          win: (u) => ({ strength: u ? 6 : 5 }), lose: { infection: 8, selfDamage: 8 }
         }
       },
 
       // ── 술사 주문: 팔이 없어도 쓴다. delayed 주문은 다음 내 턴 시작에 발동한다 ──
       arcaneBolt: {
         name: "마력 화살", rarity: "common", cost: 1, type: "attack", target: "single", magic: true, delayed: true,
-        damage: (u) => u ? 13 : 10,
-        text: (u, p = 0) => `예약: 다음 턴 시작에 피해 ${Math.max(0, (u ? 13 : 10) + p)}.\n대상이 죽으면 다른 적에게.`
+        damage: (u) => u ? 12 : 10,
+        text: (u, p = 0) => `예약: 다음 턴 시작에 피해 ${Math.max(0, (u ? 12 : 10) + p)}.\n대상이 죽으면 다른 적에게.`
       },
       fireball: {
         name: "화염구", rarity: "uncommon", cost: 2, type: "attack", target: "all", magic: true, delayed: true,
-        damage: (u) => u ? 11 : 8, burn: (u) => u ? 4 : 3, noise: 1,
-        text: (u, p = 0) => `예약: 다음 턴 시작에 모든 적에게 피해 ${Math.max(0, (u ? 11 : 8) + p)}, 화상 ${u ? 4 : 3}.\n소음 1 증가.`
+        damage: (u) => u ? 10 : 8, burn: (u) => u ? 4 : 3, noise: 1,
+        text: (u, p = 0) => `예약: 다음 턴 시작에 모든 적에게 피해 ${Math.max(0, (u ? 10 : 8) + p)}, 화상 ${u ? 4 : 3}.\n소음 1 증가.`
       },
       drain: {
         name: "흡수", rarity: "uncommon", cost: 1, type: "attack", target: "single", magic: true, delayed: true,
-        damage: (u) => u ? 9 : 6, heal: (u) => u ? 6 : 4,
-        text: (u, p = 0) => `예약: 다음 턴 시작에 피해 ${Math.max(0, (u ? 9 : 6) + p)}, 체력 ${u ? 6 : 4} 회복.`
+        damage: (u) => u ? 8 : 6, heal: (u) => u ? 5 : 4,
+        text: (u, p = 0) => `예약: 다음 턴 시작에 피해 ${Math.max(0, (u ? 8 : 6) + p)}, 체력 ${u ? 5 : 4} 회복.`
       },
       foresight: {
         name: "예지", rarity: "rare", cost: 0, type: "skill", target: "self", magic: true, delayed: true, exhaust: true,
@@ -289,8 +289,8 @@ export const CARDS = {
       },
       ward: {
         name: "역장", rarity: "common", cost: 1, type: "skill", target: "self", magic: true,
-        text: (u) => `방어도 ${u ? 8 : 5} 획득. 즉시.`,
-        effects: (u) => ({ sound: "quiet", block: u ? 8 : 5 })
+        text: (u) => `방어도 ${u ? 7 : 5} 획득. 즉시.`,
+        effects: (u) => ({ sound: "quiet", block: u ? 7 : 5 })
       },
       maintenance: {
         name: "개인 정비", rarity: "uncommon", cost: 3, upgradedCost: 2, type: "skill", target: "self", choice: true,
@@ -299,8 +299,8 @@ export const CARDS = {
       },
       tourniquet: {
         name: "지혈대", rarity: "common", cost: 1, type: "skill", target: "self",
-        text: (u) => `체력 ${u ? 6 : 4} 회복. 방어도 ${u ? 5 : 3}.`,
-        effects: (u) => ({ sound: "heal", heal: u ? 6 : 4, block: u ? 5 : 3 })
+        text: (u) => `체력 ${u ? 5 : 4} 회복. 방어도 ${u ? 4 : 3}.`,
+        effects: (u) => ({ sound: "heal", heal: u ? 5 : 4, block: u ? 4 : 3 })
       }
     };
 
