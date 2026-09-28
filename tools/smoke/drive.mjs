@@ -37,7 +37,14 @@ const evaluate = async (expression) => { const r = await send('Runtime.evaluate'
 
 await send('Runtime.enable'); await send('Log.enable'); await send('Page.enable')
 
-const pickClass = () => evaluate(`[...document.querySelectorAll('#modal button')].find(b => b.textContent.includes('생존자'))?.click(); document.querySelector('#modal h2')?.textContent`)
+// 직업 화면은 고르기 → 확정 두 단계다. 확정 버튼이 없던 예전 화면도 그대로 통과한다.
+const pickClass = () => evaluate(`(async () => {
+  const title = document.querySelector('#modal h2')?.textContent
+  document.querySelector('#modal .class-choice, #modal button.choice')?.click()
+  await new Promise(r => setTimeout(r, 200))
+  document.querySelector('#modal .class-confirm-button')?.click()
+  return title
+})()`)
 async function goto() { await send('Page.navigate', { url: 'http://localhost:8123/' }); await sleep(2500); await pickClass(); await sleep(600) }
 
 await goto()

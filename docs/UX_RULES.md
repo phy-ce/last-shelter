@@ -3,6 +3,7 @@
 - Irreversible or scarce-resource actions never execute on the first card click.
 - Irreversible choices do not have number-key shortcuts. Rewards, route commitment, treatment, and upgrade confirmation require an explicit pointer action or confirmation control.
 - Upgrade screens use: select a card, inspect the before/after result, then press a separate confirmation button.
+- Upgrade screens separate equipment and independent skills, keep before/after values visible without hover, and show the committed target in a fixed confirmation panel.
 - Escape always returns to the immediately preceding preparation screen when that screen opened the current view.
 - Combat information should use image icons and numbers before explanatory text; emoji are not production UI assets.
 - The battlefield is the primary screen. Hand cards and combat HUD float over it rather than living in separate boxed rows.
@@ -23,5 +24,7 @@
 - Enemy intentions use distinct vector symbols. Hidden intentions never reveal the actual action or coin-danger styling.
 - Body status uses an anatomical diagram plus named limb states. Injuries also use dashed outlines and explicit text, not color alone.
 - Class traits remain visible before choosing a survivor. Starting skills disclose each card's cost and actual rule summary—not only its name—on hover or keyboard focus. Backstory and starting loadout use the same progressive disclosure.
+- Character cards select on the first click and start the run only through a separate confirmation control. Clicking a portrait never starts immediately.
+- Every between-battle action ends at mandatory preparation. Healing, upgrading, taking a skill, and armory results all flow through equipment and supply management before the next combat.
 - The combat inventory is always reachable from the header or with `I`. It is read-only during combat so checking current equipment and supplies never changes combat state.
 - Visual polish is in `src/styles/visual-polish.css`; shared symbols and read-only card display helpers live in `src/ui/`.

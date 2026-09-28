@@ -2325,7 +2325,7 @@ const displayFont = (() => {
               const shown = selectedItem
                 ? [...new Map(state.deck.filter((card) => card.sourceItem === selectedItem.uid).map((card) => [card.key, card])).values()]
                 : selected;
-              const reveal = (index) => showAcquisition(shown[index], index + 1 < shown.length ? () => reveal(index + 1) : nextStage, "강화 완료", false);
+              const reveal = (index) => showAcquisition(shown[index], index + 1 < shown.length ? () => reveal(index + 1) : prepareNextBattle, "강화 완료", false);
               reveal(0);
             }, "button primary upgrade-confirm");
           confirm.disabled = !ready;
@@ -2412,7 +2412,7 @@ const displayFont = (() => {
               const added = rules.addSkill(state, item.key, events);
               present(events);
               Sound.play("gatherCards");
-              showAcquisition(added, m.continue || chooseRoute);
+              showAcquisition(added, m.afterAction ? prepareNextBattle : m.continue || chooseRoute);
             });
             content.append(node);
             return;
@@ -2422,10 +2422,15 @@ const displayFont = (() => {
             Sound.play("inventoryMove");
             if (!rules.canAddLoot(state, item)) {
               // 가방이 꽉 찼다. 가방 화면에서 자리를 만들거나 손에 들거나 버린다.
-              showInventory(m.continue, null, null, item);
+              if (m.afterAction) showInventory(nextStage, null, null, item, true);
+              else showInventory(m.continue, null, null, item);
               return;
             }
             present(rules.addLoot(state, item));
+            if (m.afterAction) {
+              prepareNextBattle();
+              return;
+            }
             if (m.continue) {
               // 인벤토리에서 Esc를 누르면 이 결정 화면으로 되돌아온다. 다음 구역 이동은 명시적 버튼으로만.
               const decide = () => openModal({
@@ -2455,7 +2460,7 @@ const displayFont = (() => {
           bindItemCardTooltip(node, data);
           content.append(node);
         });
-        $("overlay").append(button("건너뛰기", chooseRoute, "modal-aside"));
+        $("overlay").append(button("건너뛰기", m.afterAction ? prepareNextBattle : chooseRoute, "modal-aside"));
       } else if (m.type === "inventory") {
         content.className = `bag-screen${m.readOnly ? " inventory-readonly" : ""}`;
         root.append(hudStrip(() => openModal({
@@ -2561,11 +2566,18 @@ const displayFont = (() => {
         if (classScreen) { root.classList.add("class-modal"); content.classList.add("class-options"); }
         m.options.forEach((option, index) => {
           const action = option.disabled ? null : option.action;
-          const node = button("", () => action?.(), "choice");
+          const chosen = classScreen && m.selectedClassId === option.classId;
+          const selectClass = () => {
+            m.selectedClassId = option.classId;
+            renderModal();
+          };
+          const node = button("", classScreen ? selectClass : () => action?.(), "choice");
           node.disabled = Boolean(option.disabled);
           if (classScreen) {
             node.classList.add("class-choice");
             node.dataset.class = option.classId;
+            node.classList.toggle("class-selected", chosen);
+            node.setAttribute("aria-pressed", String(chosen));
             const classPresentation = {
               survivor: { number: "01", role: "균형형", icon: "body", portrait: "/assets/art/survivor-class-v1.webp" },
               mage: { number: "02", role: "예약 주문", icon: "status-pending", portrait: "/assets/art/survivor-mage-v1.webp" },
@@ -2627,7 +2639,7 @@ const displayFont = (() => {
             body.append(
               heading,
               details,
-              el("span", "class-select-cta", "이 생존자로 시작")
+              el("span", "class-select-cta", chosen ? "선택됨" : "선택해서 확인")
             );
             node.append(body);
           } else {
@@ -2635,7 +2647,21 @@ const displayFont = (() => {
           }
           content.append(node);
         });
-        footer.textContent = classScreen ? "" : "클릭하여 선택";
+        if (classScreen) {
+          content.classList.toggle("has-class-selection", Boolean(m.selectedClassId));
+          const selectedClass = m.options.find((option) => option.classId === m.selectedClassId);
+          const selection = el("div", "class-confirm-copy");
+          selection.append(
+            el("span", "eyebrow", "SELECTED SURVIVOR"),
+            el("strong", "", selectedClass ? selectedClass.title : "아직 선택하지 않음"),
+            el("small", "", selectedClass ? "시작 규칙과 소지품을 확인한 뒤 확정하세요." : "캐릭터를 한 번 눌러 선택하세요.")
+          );
+          const confirm = button(selectedClass ? "이 생존자로 시작" : "생존자 선택 필요", () => selectedClass?.action(), "button primary class-confirm-button");
+          confirm.disabled = !selectedClass;
+          footer.append(selection, confirm);
+        } else {
+          footer.textContent = "클릭하여 선택";
+        }
       }
 
       root.append(content, footer);
@@ -2644,7 +2670,10 @@ const displayFont = (() => {
       const selectedUpgradeNode = lastSelectedId != null
         ? root.querySelector(`[data-upgrade-id="${CSS.escape(String(lastSelectedId))}"]`)
         : null;
-      (selectedUpgradeNode || root.querySelector("button:not(:disabled), [tabindex='0']"))?.focus({ preventScroll: true });
+      const selectedClassNode = m.selectedClassId
+        ? root.querySelector(`.class-choice[data-class="${CSS.escape(String(m.selectedClassId))}"]`)
+        : null;
+      (selectedUpgradeNode || selectedClassNode || root.querySelector("button:not(:disabled), [tabindex='0']"))?.focus({ preventScroll: true });
     }
 
     function requestCoin(config) {
@@ -3182,6 +3211,11 @@ const displayFont = (() => {
       startBattle();
     }
 
+    // 전투 사이 행동을 끝낸 뒤에는 예외 없이 장비·물자를 다시 정리하고 다음 전투로 간다.
+    function prepareNextBattle() {
+      showInventory(nextStage, null, null, null, true);
+    }
+
     function chooseRoute() {
       openModal({
         type: "route",
@@ -3198,7 +3232,7 @@ const displayFont = (() => {
               Sound.play("heal");
 
               if (!injured.length) {
-                nextStage();
+                prepareNextBattle();
                 return;
               }
 
@@ -3212,7 +3246,7 @@ const displayFont = (() => {
                   action: () => {
                     present(rules.healLimb(state, limb.key));
                     // 팔이 돌아오면 다시 들 수 있으니 장비부터 정리하게 한다.
-                    showInventory(nextStage, null, null, null, true);
+                    prepareNextBattle();
                   }
                 }))
               });
@@ -3257,7 +3291,8 @@ const displayFont = (() => {
         title: "누군가 먼저 다녀갔다",
         subtitle: "STRANGER'S CACHE",
         description: "하나만 가져갈 수 있다.",
-        cards: rules.rollSkills(state)
+        cards: rules.rollSkills(state),
+        next: prepareNextBattle
       });
     }
 
@@ -3275,7 +3310,7 @@ const displayFont = (() => {
           title: "군수 창고",
           subtitle: "ARMORY CACHE",
           items: rules.rollArmory(state),
-          continue: nextStage
+          afterAction: true
         });
       } else {
         present(rules.warehouseFail(state));
@@ -3285,7 +3320,7 @@ const displayFont = (() => {
           subtitle: "WAREHOUSE SEARCH",
           description: `체력 6 손실 · 남은 체력 ${state.hp}/${state.maxHp}`,
           options: [
-            { title: "다음 구역", text: "발소리가 가까워진다.", action: nextStage }
+            { title: "재정비", text: "장비와 물자를 정리한 뒤 이동합니다.", action: prepareNextBattle }
           ]
         });
       }
