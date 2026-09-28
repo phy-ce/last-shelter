@@ -2106,6 +2106,8 @@ const displayFont = (() => {
       const root = $("modal");
       root.className = "modal";
       if (["deck", "upgrade"].includes(m.type)) root.classList.add("deck-modal");
+      if (m.type === "upgrade") root.classList.add("upgrade-modal");
+      if (m.type === "route") root.classList.add("route-modal");
       root.replaceChildren();
       $("overlay").querySelector(".modal-aside")?.remove();
       const head = el("div", "row");
@@ -2165,9 +2167,46 @@ const displayFont = (() => {
         footer.textContent = "C / Esc 닫기";
       } else if (m.type === "deck" || m.type === "upgrade") {
         const cards = m.type === "upgrade" ? state.deck.filter((c) => rules.isUpgradable(state, c)) : m.cards || state.deck;
-        content.className = "deck-grid";
-        content.id = "deckRail";
-        content.setAttribute("aria-label", "카드 목록. 위아래로 스크롤합니다.");
+        let cardList = content;
+        let equipmentList = null;
+        let skillList = null;
+        if (m.type === "upgrade") {
+          content.className = "upgrade-workspace";
+          const skillNeed = rules.skillUpgradeCount(state);
+          const guide = el("section", "upgrade-mode-guide");
+          const mode = (mark, title, copy) => {
+            const node = el("div", "upgrade-mode");
+            node.append(el("b", "upgrade-mode-mark", mark), el("strong", "", title), el("span", "", copy));
+            return node;
+          };
+          guide.append(
+            el("div", "upgrade-guide-label", "강화 방식 중 하나를 선택"),
+            mode("A", "장비 1개", "장비가 제공하는 모든 카드 강화"),
+            el("span", "upgrade-or", "또는"),
+            mode("B", `스킬 ${skillNeed}장`, "장비에 포함되지 않은 카드만 선택")
+          );
+          cardList = el("div", "upgrade-candidate-scroll");
+          cardList.id = "deckRail";
+          cardList.setAttribute("aria-label", "강화 후보. 위아래로 스크롤합니다.");
+          const equipmentSection = el("section", "upgrade-candidate-section upgrade-equipment-section");
+          const equipmentHeading = el("div", "upgrade-section-heading");
+          equipmentHeading.append(uiIcon("settings"), el("div", "", ""));
+          equipmentHeading.lastElementChild.append(el("strong", "", "장비"), el("span", "", "하나를 선택하면 소속 카드가 전부 강화됩니다."));
+          equipmentList = el("div", "deck-grid upgrade-candidate-grid");
+          equipmentSection.append(equipmentHeading, equipmentList);
+          const skillSection = el("section", "upgrade-candidate-section upgrade-skill-section");
+          const skillHeading = el("div", "upgrade-section-heading");
+          skillHeading.append(uiIcon("cards"), el("div", "", ""));
+          skillHeading.lastElementChild.append(el("strong", "", "독립 스킬"), el("span", "", `${skillNeed}장을 골라 한 번에 강화합니다.`));
+          skillList = el("div", "deck-grid upgrade-candidate-grid");
+          skillSection.append(skillHeading, skillList);
+          cardList.append(equipmentSection, skillSection);
+          content.append(guide, cardList);
+        } else {
+          content.className = "deck-grid";
+          content.id = "deckRail";
+          content.setAttribute("aria-label", "카드 목록. 위아래로 스크롤합니다.");
+        }
 
         const entries = [];
         if (m.type === "deck" && deckGrouped) {
@@ -2203,50 +2242,43 @@ const displayFont = (() => {
               const itemData = itemDef(item.key);
               const node = button("", action, `upgrade-bundle rarity-${itemData.rarity}`);
               node.dataset.upgradeId = card.id;
-              node.classList.toggle("upgrade-selected", (m.selectedIds || []).includes(card.id));
+              const chosen = (m.selectedIds || []).includes(card.id);
+              node.classList.toggle("upgrade-selected", chosen);
+              node.setAttribute("aria-pressed", String(chosen));
+              const selectionMark = el("span", "upgrade-selection-mark", chosen ? "선택됨" : "선택");
+              selectionMark.prepend(uiIcon("choice"));
               const heading = el("div", "upgrade-bundle-heading");
               heading.append(
                 el("span", "upgrade-kind", "장비 강화"),
                 el("strong", "", itemData.name),
-                el("small", "", `카드 ${bundle.length}장 동시 강화 · 호버로 비교`)
+                el("small", "", `카드 ${bundle.length}장 동시 강화`)
               );
-              node.append(itemArtNode(itemData, "upgrade-item-art"), heading);
+              const included = el("div", "upgrade-bundle-cards");
+              for (const bundledCard of bundle) {
+                included.append(el("span", "", `${CARDS[bundledCard.key].name}${bundledCard.upgraded ? "+" : ""}`));
+              }
+              node.append(itemArtNode(itemData, "upgrade-item-art"), selectionMark, heading, included);
               bindUpgradeItemTooltip(node, itemData);
-              content.append(node);
+              equipmentList.append(node);
               continue;
             }
             const node = modalCard(card, action);
             node.classList.add("upgrade-skill-card");
             node.querySelector(".content").prepend(el("span", "upgrade-kind", `스킬 ${rules.skillUpgradeCount(state)}장 강화`));
             node.dataset.upgradeId = card.id;
-            node.classList.toggle("upgrade-selected", (m.selectedIds || []).includes(card.id));
-            const showComparison = () => {
-              document.querySelector(".upgrade-side-preview")?.remove();
-              content.classList.add("upgrade-previewing");
-              node.classList.add("upgrade-origin");
-              const preview = el("aside", `upgrade-side-preview rarity-${rarityOf(card)}`);
-              appendArt(preview, card.key);
-              const copy = el("div", "content");
-              copy.append(el("span", "compare-label improved", "강화 후"), el("strong", "", `${CARDS[card.key].name}+ · ${rules.cardCost({ ...card, upgraded: true })} AP`), el("p", "", summary({ ...card, upgraded: true }, false)));
-              preview.append(copy);
-              document.body.append(preview);
-              const rect = node.getBoundingClientRect();
-              const width = Math.min(270, Math.max(210, rect.width));
-              const right = Math.min(innerWidth - width - 16, rect.right + 14);
-              preview.style.width = `${width}px`;
-              preview.style.left = `${Math.max(16, right)}px`;
-              preview.style.top = `${Math.max(16, Math.min(innerHeight - 340, rect.top))}px`;
-            };
-            const hideComparison = () => {
-              document.querySelector(".upgrade-side-preview")?.remove();
-              content.classList.remove("upgrade-previewing");
-              node.classList.remove("upgrade-origin");
-            };
-            node.addEventListener("pointerenter", showComparison);
-            node.addEventListener("focus", showComparison);
-            node.addEventListener("pointerleave", hideComparison);
-            node.addEventListener("blur", hideComparison);
-            content.append(node);
+            const chosen = (m.selectedIds || []).includes(card.id);
+            node.classList.toggle("upgrade-selected", chosen);
+            node.setAttribute("aria-pressed", String(chosen));
+            const selectionMark = el("span", "upgrade-selection-mark", chosen ? "선택됨" : "선택");
+            selectionMark.prepend(uiIcon("choice"));
+            const comparison = el("div", "upgrade-inline-comparison");
+            comparison.append(
+              el("span", "upgrade-before", `현재\n${summary(card, false)}`),
+              el("b", "upgrade-arrow", "→"),
+              el("span", "upgrade-after", `강화 후\n${summary({ ...card, upgraded: true }, false)}`)
+            );
+            node.append(selectionMark, comparison);
+            skillList.append(node);
             continue;
           }
           const node = modalCard(card, action);
@@ -2254,7 +2286,7 @@ const displayFont = (() => {
             node.querySelector(".content").append(el("span", "pile-label", pileName(card)));
             if (count > 1) node.append(el("span", "card-count", `×${count}`));
           }
-          content.append(node);
+          cardList.append(node);
         }
 
         if (m.type === "deck") footer.append(
@@ -2269,12 +2301,23 @@ const displayFont = (() => {
           const selectedBundleCount = selectedItem ? cards.filter((card) => card.sourceItem === selectedItem.uid).length : 0;
           const skillNeed = rules.skillUpgradeCount(state);
           const ready = rules.canConfirmUpgrade(state, selected);
-          footer.append(
-            el("span", "", selectedItem ? `${itemDef(selectedItem.key).name} 선택됨 · 카드 ${selectedBundleCount}장 함께 강화`
-              : selected.length ? `스킬 ${selected.length}/${skillNeed} · ${selected.map((card) => CARDS[card.key].name).join(" · ")}`
-              : "장비 또는 스킬을 선택하세요"),
-            button("돌아가기 · Esc", chooseRoute),
-            button(selectedItem ? "이 장비 강화" : `스킬 ${skillNeed}장 강화`, () => {
+          const selectionPanel = el("aside", `upgrade-selection-panel${ready ? " ready" : ""}`);
+          const selectionHeading = el("div", "upgrade-selection-heading");
+          selectionHeading.append(el("span", "eyebrow", "CURRENT TARGET"), el("strong", "", selectedItem ? "장비 강화" : "스킬 강화"));
+          const selectionBody = el("div", "upgrade-selection-body");
+          if (selectedItem) {
+            selectionBody.append(el("b", "", itemDef(selectedItem.key).name), el("span", "", `포함 카드 ${selectedBundleCount}장 전체`));
+            for (const bundledCard of cards.filter((candidate) => candidate.sourceItem === selectedItem.uid)) {
+              selectionBody.append(el("small", "", `${CARDS[bundledCard.key].name} → ${CARDS[bundledCard.key].name}+`));
+            }
+          } else if (selected.length) {
+            selectionBody.append(el("b", "", `${selected.length} / ${skillNeed} 선택`));
+            for (const selectedCard of selected) selectionBody.append(el("small", "", `${CARDS[selectedCard.key].name} → ${CARDS[selectedCard.key].name}+`));
+          } else {
+            selectionHeading.lastElementChild.textContent = "아직 선택하지 않음";
+            selectionBody.append(el("p", "", "왼쪽에서 장비 하나 또는 독립 스킬을 고르세요."));
+          }
+          const confirm = button(selectedItem ? "이 장비 강화" : `스킬 ${skillNeed}장 강화`, () => {
               if (!rules.canConfirmUpgrade(state, selected)) return;
               present(rules.upgradeSelection(state, selected));
               // 강화 결과를 한 장씩 보여 준 뒤 한 번만 다음 구역으로 간다.
@@ -2284,31 +2327,72 @@ const displayFont = (() => {
                 : selected;
               const reveal = (index) => showAcquisition(shown[index], index + 1 < shown.length ? () => reveal(index + 1) : nextStage, "강화 완료", false);
               reveal(0);
-            }, "button primary")
+            }, "button primary upgrade-confirm");
+          confirm.disabled = !ready;
+          selectionPanel.append(selectionHeading, selectionBody, confirm);
+          content.append(selectionPanel);
+          footer.append(
+            el("span", "", selectedItem ? `${itemDef(selectedItem.key).name}의 소속 카드가 전부 강화됩니다.`
+              : selected.length ? `독립 스킬 ${selected.length}/${skillNeed} 선택` : "두 방식은 함께 선택할 수 없습니다."),
+            button("돌아가기 · Esc", chooseRoute)
           );
-          footer.lastElementChild.disabled = !ready;
         }
       } else if (m.type === "route") {
         content.className = "route-screen";
+        const overview = el("section", "intermission-overview");
+        const overviewHeading = el("div", "intermission-heading");
+        overviewHeading.append(
+          el("span", "eyebrow", "BATTLE CLEARED"),
+          el("strong", "", STAGES[state.stage]?.name || "전투 종료"),
+          el("p", "", "다음 구역으로 가기 전에 상태를 확인하세요.")
+        );
+        const stats = el("div", "intermission-stats");
+        const stat = (icon, label, value, danger = false) => {
+          const node = el("div", `intermission-stat${danger ? " danger" : ""}`);
+          node.append(uiIcon(icon), el("span", "", label), el("strong", "", value));
+          return node;
+        };
+        stats.append(
+          stat("heart", "체력", `${state.hp}/${state.maxHp}`, state.hp / state.maxHp < .35),
+          stat("infection", "감염", state.infection, state.infection >= 4),
+          stat("body", "사지 부상", `${injuredCount()}곳`, injuredCount() > 0),
+          stat("ammo", "탄약", `${ammoCount()}발`, ammoCount() < 2),
+          stat("cards", "덱", `${state.deck.length}장`)
+        );
         const management = button("", showInventory, "route-management");
         management.append(
-          el("span", "eyebrow", "SURVIVOR MANAGEMENT"),
-          el("strong", "", "장비와 물자"),
-          el("p", "", `체력 ${state.hp}/${state.maxHp} · 감염 ${state.infection} · 사지 ${injuredCount()}곳 · 탄약 ${ammoCount()}발 · 덱 ${state.deck.length}장`),
-          el("small", "", "장착, 소모품 사용, 덱 확인")
+          uiIcon("backpack"),
+          el("span", "", "장비와 물자"),
+          el("small", "", "정비 · 소모품 · 덱 확인"),
+          el("b", "", "열기 →")
         );
-        content.append(management);
+        overview.append(overviewHeading, stats, management);
+        content.append(overview);
+        const routeHeading = el("div", "route-section-heading");
+        routeHeading.append(el("span", "eyebrow", "NEXT MOVE"), el("strong", "", "다음 행동을 선택"), el("p", "", "한 곳을 선택해 정비하거나 다음 구역으로 이동합니다."));
+        content.append(routeHeading);
         const paths = el("section", "route-grid");
-        for (const option of m.options) {
+        const routeMeta = {
+          shelter: { icon: "heal", label: "회복" },
+          workshop: { icon: "settings", label: "영구 강화" },
+          stranger: { icon: "cards", label: "새 스킬" },
+          armory: { icon: "coin", label: "위험한 보급" }
+        };
+        m.options.forEach((option, index) => {
           const node = button("", option.action, `route-card route-${option.tone}`);
           node.disabled = Boolean(option.disabled);
           const art = el("img", "route-art");
           art.src = option.art;
           art.alt = "";
-          node.append(art, el("span", "route-copy", ""));
-          node.lastElementChild.append(el("strong", "", option.title), el("p", "", option.text));
+          const meta = routeMeta[option.tone] || { icon: "choice", label: "이동" };
+          const category = el("span", "route-category");
+          category.append(uiIcon(meta.icon), el("b", "", meta.label));
+          const copy = el("span", "route-copy", "");
+          copy.append(el("small", "route-index", String(index + 1).padStart(2, "0")), el("strong", "", option.title), el("p", "", option.text));
+          if (option.disabled) copy.append(el("em", "route-unavailable", "현재 이용 불가"));
+          node.append(art, category, copy);
           paths.append(node);
-        }
+        });
         content.append(paths);
       } else if (m.type === "loot") {
         // 보상을 고르기 전에 덱과 장비를 확인할 수 있어야 한다. 두 화면 모두 이 보상 화면으로 되돌아온다.
@@ -3143,7 +3227,8 @@ const displayFont = (() => {
             action: () => openModal({
               type: "upgrade",
               title: "금속은 아직 말을 듣는다",
-              description: "호버: 강화 전후 비교"
+              subtitle: "FIELD WORKSHOP",
+              description: "장비 하나를 강화하거나, 장비에 속하지 않은 스킬을 묶어서 강화합니다. 후보마다 강화 결과가 바로 표시됩니다."
             })
           },
           {
@@ -3391,8 +3476,6 @@ const displayFont = (() => {
     function bindUpgradeItemTooltip(node, item) {
       node.addEventListener("pointerenter", () => { if (finePointer.matches) upgradeItemTooltip(item, node); });
       node.addEventListener("pointerleave", hideTooltip);
-      node.addEventListener("focus", () => upgradeItemTooltip(item, node));
-      node.addEventListener("blur", hideTooltip);
     }
 
     function summary(card, includeTemporaryStrength = ["combat", "playing", "resolving"].includes(state?.phase)) {

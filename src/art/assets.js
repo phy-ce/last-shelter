@@ -70,8 +70,8 @@ export const ENEMY_INJURED_SPRITES = {
   spitter: { arm: image('/assets/art/enemy-spitter-arm-injured-v1.webp') },
   brute: { arm: image('/assets/art/enemy-brute-arm-injured-v1.webp') },
   boss: {
-    arm: image('/assets/art/enemy-boss-arm-injured-v1.webp'),
-    leg: image('/assets/art/enemy-boss-leg-injured-v1.webp'),
+    arm: image('/assets/art/enemy-boss-arm-injured-v3.webp'),
+    leg: image('/assets/art/enemy-boss-leg-injured-v3.webp'),
   },
   crawler: { leg: image('/assets/art/enemy-crawler-leg-injured-v1.webp') },
   bloater: { arm: image('/assets/art/enemy-bloater-arm-injured-v1.webp') },
