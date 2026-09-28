@@ -2630,9 +2630,12 @@ const displayFont = (() => {
               );
               startCards.append(card);
             }
+            const startSkillsRow = detailRow("cards", "시작 기술", startCards);
+            startSkillsRow.classList.add("class-start-skills-row");
+            startSkillsRow.querySelector(".class-info-hint").textContent = "HOVER · SCROLL";
             details.append(
               detailRow("log", "고유 규칙", option.trait),
-              detailRow("cards", "시작 기술", startCards),
+              startSkillsRow,
               detailRow("backpack", "소지품", (option.inventory.length ? option.inventory : ["없음"]).join(" · "))
             );
 
@@ -2780,7 +2783,6 @@ const displayFont = (() => {
 
       coin.parentElement.classList.remove("tossing");
       coin.classList.add("landed");
-      Sound.play("coin");
       label.classList.add(result === chosen ? "coin-success" : "coin-failure");
       data.spinning = false;
       data.result = result;
@@ -2819,12 +2821,16 @@ const displayFont = (() => {
       rules.unequip(state, slot);
     }
 
-    function useMedkit(item) {
+    function preparationRecovery(item) {
       const events = [];
-      if (!rules.useMedkit(state, item, events)) return;
+      if (!rules.useRecovery(state, item, events)) return false;
       present(events);
-      if (item.uses === 0) depletionEffect(item);
       Sound.play("heal");
+      return true;
+    }
+
+    function preparationRecoveryInfo(item) {
+      return rules.recoveryInfo(state, item);
     }
 
     // ── 가방 화면 ───────────────────────────────────────────────
@@ -2950,8 +2956,15 @@ const displayFont = (() => {
       }
       const size = rules.itemSize(item, 0);
       if (size.w !== size.h && (item.pos || ref === "incoming")) row.append(button("회전 · R", () => rotateBag()));
-      if (item.key === "medkit" && !m.combatDone && rules.hasWorkingArm(state) && ref !== "incoming") {
-        row.append(button("1회 사용", () => { useMedkit(item); renderModal(); }));
+      const recovery = preparationRecoveryInfo(item);
+      if (recovery && !m.combatDone && !m.readOnly && ref !== "incoming") {
+        const effects = [recovery.heal ? `체력 +${recovery.heal}` : null, recovery.cure ? `감염 −${recovery.cure}` : null].filter(Boolean).join(" · ");
+        const use = button(`1회 사용 · ${effects}`, () => { preparationRecovery(item); renderModal(); });
+        const noArms = !rules.hasWorkingArm(state);
+        use.disabled = noArms || !recovery.useful;
+        if (noArms) use.title = "사용할 수 있는 팔이 없습니다.";
+        else if (!recovery.useful) use.title = "회복하거나 줄일 수 있는 상태가 없습니다.";
+        row.append(use);
       }
       row.append(button("버리기", () => discardRef(m, ref)));
       panel.append(row);

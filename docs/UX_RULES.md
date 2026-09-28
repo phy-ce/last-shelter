@@ -17,6 +17,7 @@
 - Reference imagery informs presentation only. Do not copy its party systems, mind gauges, resistances, formation mechanics, or menu structure into game rules.
 
 - Resting hand cards keep a compact physical-card proportion and stay below the battlefield. Hover and keyboard focus only lift them slightly; they never grow into the enemy targeting area. Number keys select a card, and right-click opens its complete effect and source in a dedicated detail view.
+- Hand cards keep a 2.5:3.5 physical-card ratio in both resting and hover states. Hover never changes the card's height. The playable effect summary remains visible inside the lower card area on hover/focus; it must not be removed by compact-layout overrides.
 - Combat effect numbers come from content definitions and rule calculations. Conditional coin effects, delayed effects, ammo costs, noise, and exhaust retain distinct visible markers; they are not removed merely to shorten a card.
 - Rarity names remain in accessible labels. Detailed card summaries remain available to assistive technology.
 - Flavour text is on the card back, behind the 뒷면 chip, so the face carries only what is needed to play.
@@ -26,5 +27,9 @@
 - Class traits remain visible before choosing a survivor. Starting skills disclose each card's cost and actual rule summary—not only its name—on hover or keyboard focus. Backstory and starting loadout use the same progressive disclosure.
 - Character cards select on the first click and start the run only through a separate confirmation control. Clicking a portrait never starts immediately.
 - Every between-battle action ends at mandatory preparation. Healing, upgrading, taking a skill, and armory results all flow through equipment and supply management before the next combat.
+- During between-battle preparation, every owned consumable whose card defines persistent HP recovery or infection reduction can be used directly from the bag. This currently includes the medkit, antibiotics, painkillers, and tourniquet. The button and applied values come from the card's content definition, never duplicated UI constants.
+- Preparation use consumes exactly one use and removes the item and its cards at zero uses. Combat-only portions such as block, energy, card draw, strength, noise control, and one-turn injury suppression do not carry into preparation; the button states only the persistent effect that will actually apply.
+- A preparation recovery button remains visible but disabled when there is nothing to heal/cure or the survivor cannot use consumables, and it explains the reason. Incoming loot cannot be consumed before it is placed in the bag, and the combat inventory remains read-only.
+- Coin-toss audio plays once, on the HEADS/TAILS choice click. Landing and result rendering do not replay the coin sample.
 - The combat inventory is always reachable from the header or with `I`. It is read-only during combat so checking current equipment and supplies never changes combat state.
 - Visual polish is in `src/styles/visual-polish.css`; shared symbols and read-only card display helpers live in `src/ui/`.

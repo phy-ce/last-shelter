@@ -187,7 +187,7 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .hand .card-metric { font-size: 13px; }
 .hand .card-metric .hud-icon { width: 15px; height: 15px; }
 .hand .card-detail,
-.hand .card .item-source { display: none !important; }
+.hand .card .item-source { display: none; }
 .hand-slot:hover .card:not(:disabled),
 .hand .card:focus-visible:not(:disabled) {
   height: 216px;
@@ -217,7 +217,13 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .card-inspect-card .content > strong { font-size: 23px; }
 .card-inspect-card .card-rules { margin-top: 12px; color: #ddd7ca; font-size: 14px; line-height: 1.65; white-space: pre-line; }
 
-.class-start-cards { display: grid; gap: 5px; }
+.class-start-cards {
+  display: grid;
+  gap: 5px;
+  overscroll-behavior: contain;
+  scrollbar-color: color-mix(in srgb, var(--class-accent) 72%, #777 28%) #090b0b;
+  scrollbar-width: thin;
+}
 .class-start-card {
   position: relative;
   padding: 7px 40px 7px 9px;
@@ -228,7 +234,16 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .class-start-card > p { margin: 3px 0 0; color: #9f9e98; font: 500 9px/1.35 var(--font-body); }
 .class-start-cost { position: absolute; top: 7px; right: 8px; color: #d7bd7c; font: 700 8px/1 var(--font-body); }
 .class-info-row:hover .class-info-copy.class-start-cards,
-.class-choice:focus-visible .class-info-copy.class-start-cards { max-height: 180px; }
+.class-choice:focus-visible .class-info-copy.class-start-cards {
+  max-height: min(260px, 25dvh);
+  padding-right: 5px;
+  overflow-y: auto;
+}
+.class-start-cards::-webkit-scrollbar { width: 6px; }
+.class-start-cards::-webkit-scrollbar-track { background: #090b0b; }
+.class-start-cards::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--class-accent) 72%, #777 28%); }
+.class-start-skills-row:hover .class-info-hint,
+.class-choice:focus-visible .class-start-skills-row .class-info-hint { letter-spacing: .08em; }
 
 .inventory-readonly .bag-item { cursor: default; }
 .inventory-readonly .bag-item:hover { filter: brightness(1.08); }
@@ -499,30 +514,31 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 @keyframes status-fever-pulse { 50% { filter: drop-shadow(0 0 6px #d64e3d8f); } }
 @media (prefers-reduced-motion: reduce) { .status-fever { animation: none; } }
 
-/* Resting cards stay below the battlefield; hover/focus lifts the complete card. */
-.hand { --hand-step: min(150px, calc((100vw - 400px) / var(--hand-count, 5))); bottom: -88px; height: 240px; }
-.hand-slot { width: 190px; height: 230px; }
+/* Keep the hand at a physical 2.5:3.5 card ratio. Hover reveals rules inside the
+   existing card instead of stretching it into a tall panel. */
+.hand { --hand-step: min(124px, calc((100vw - 390px) / var(--hand-count, 5))); bottom: -72px; height: 218px; }
+.hand-slot { width: 154px; height: 216px; }
 .hand .card {
-  width: 190px;
-  height: 230px;
-  border-width: 2px;
+  width: 154px;
+  height: 216px;
+  border-width: 1px;
   border-color: color-mix(in srgb, var(--rarity, #b9b2a5), #17191b 22%) !important;
   border-radius: 8px 8px 5px 5px;
   background: #17191b;
   box-shadow: 0 12px 28px #000d, inset 0 0 0 1px color-mix(in srgb, var(--rarity, #b9b2a5), transparent 82%);
 }
-.hand .card > img, .hand .card > canvas { height: 76px; margin-top: 42px; object-fit: cover; border: 0; opacity: .98; }
-.hand .card-body { position: relative; min-height: 112px; padding: 9px 11px 11px; background: linear-gradient(#2b2922fa, #151719); }
+.hand .card > img, .hand .card > canvas { flex: 0 0 84px; height: 84px; margin-top: 38px; object-fit: cover; border: 0; opacity: .98; }
+.hand .card-body { position: relative; min-height: 0; flex: 1 1 auto; padding: 7px 9px 9px; overflow: hidden; background: linear-gradient(#2b2922fa, #151719); }
 .hand .card-title {
   position: absolute;
   z-index: 3;
   top: 0;
-  left: 39px;
-  right: 35px;
+  left: 33px;
+  right: 29px;
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 38px;
+  min-height: 35px;
   margin: 0;
   padding: 4px 5px;
   overflow: visible;
@@ -532,7 +548,7 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
   background: linear-gradient(90deg, #171715, #29271f 48%, #171715);
   box-shadow: 0 2px 7px #0009;
   color: #f2dfb9;
-  font: 700 12px/1.15 var(--font-body);
+  font: 700 10.5px/1.12 var(--font-body);
   letter-spacing: .01em;
   text-align: center;
   text-overflow: clip;
@@ -542,12 +558,12 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
   overflow-wrap: anywhere;
 }
 .hand .card-rarity { position: absolute; top: 10px; right: 8px; margin: 0; font-size: 9px; color: var(--rarity, #cab989); }
-.hand .cost { top: 7px; left: 7px; width: 27px; height: 27px; border: 1px solid #e6cb88; background: radial-gradient(circle at 35% 25%, #574b32, #22221e 75%); color: #f6dfa8; box-shadow: 0 2px 7px #000b; font-size: 15px; font-weight: 700; }
+.hand .cost { top: 7px; left: 7px; width: 23px; height: 23px; border: 1px solid #e6cb88; background: radial-gradient(circle at 35% 25%, #574b32, #22221e 75%); color: #f6dfa8; box-shadow: 0 2px 7px #000b; font-size: 13px; font-weight: 700; }
 .hand .uses-badge {
   position: absolute;
   z-index: 5;
-  top: 43px;
-  right: 9px;
+  top: 41px;
+  right: 8px;
   display: flex;
   align-items: baseline;
   gap: 4px;
@@ -557,8 +573,8 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
   color: #d7eadb;
   text-shadow: 0 2px 3px #000, 0 0 6px #000;
 }
-.hand .uses-badge small { color: #a9c3ae; font: 700 8px/1 var(--font-body); letter-spacing: .08em; }
-.hand .uses-badge strong { margin: 0; color: #e5f3e7; font: 800 14px/1 var(--font-body); }
+.hand .uses-badge small { display: none; }
+.hand .uses-badge strong { margin: 0; color: #e5f3e7; font: 800 12px/1 var(--font-body); }
 .hand .shortcut { top: 8px; right: 8px; }
 .card-metrics { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 11px; }
 .hand .card-metrics {
@@ -584,23 +600,23 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .metric-noise, .metric-ammo, .metric-exhaust { font-size: 11px; opacity: .78; }
 .hand .card .item-source { display: none; }
 .hand-slot:hover .card:not(:disabled), .hand .card:focus-visible:not(:disabled), .hand .card.selected {
-  height: 330px;
-  transform: translateY(-142px) rotate(0deg) scale(1.06);
+  height: 216px;
+  transform: translateY(-24px) rotate(0deg) scale(1.035);
   border-color: var(--rarity, #b9b2a5) !important;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--rarity, #b9b2a5), white 12%), 0 0 20px color-mix(in srgb, var(--rarity, #b9b2a5), transparent 72%), 0 22px 55px #000c;
 }
 .hand-slot:hover .card-detail, .hand .card:is(:focus-visible, .selected) .card-detail {
   display: block;
-  margin: 6px 0 0;
-  padding: 7px 2px 0;
+  margin: 4px 0 0;
+  padding: 5px 1px 0;
   border-top: 1px solid #c1a57135;
-  max-height: 100px;
+  max-height: 58px;
   overflow: auto;
   color: #e1dbcf;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 450;
-  line-height: 1.55;
+  line-height: 1.35;
   letter-spacing: .01em;
   white-space: pre-line;
   text-wrap: pretty;
@@ -834,14 +850,14 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 }
 @media (max-height: 800px) and (min-width: 900px) {
   .app { grid-template-rows: 60px minmax(460px, 1fr) 22px; }
-  .hand { bottom: -98px; }
-  .hand-slot:hover .card:not(:disabled), .hand .card:focus-visible:not(:disabled), .hand .card.selected { transform: translateY(-132px) rotate(0deg) scale(1.03); }
+  .hand { bottom: -82px; }
+  .hand-slot:hover .card:not(:disabled), .hand .card:focus-visible:not(:disabled), .hand .card.selected { transform: translateY(-28px) rotate(0deg) scale(1.03); }
 }
 
 /* A chosen card becomes an aiming token, not a persistent full-card preview. Keep it below
    enemy legs and let limb hit targets win when the two layers approach each other. */
 .hand.has-selection .card.selected {
-  height: 230px;
+  height: 216px;
   transform: translateY(-18px) rotate(0deg) scale(1.025);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--rarity, #b9b2a5), white 18%), 0 0 18px color-mix(in srgb, var(--rarity, #b9b2a5), transparent 76%), 0 14px 34px #000c;
 }

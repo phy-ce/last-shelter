@@ -1055,18 +1055,37 @@ export function hasWorkingArm(state) {
   return !(state.limbs.leftArm && state.limbs.rightArm)
 }
 
-export function useMedkit(state, item, events = []) {
-  if (!item || item.uses <= 0 || (state.hp >= state.maxHp && state.infection <= 0)) return null
-  if (!hasWorkingArm(state)) return null
-  const fx = skillEffects('heal', item.upgraded)
-  const healed = Math.min(fx.heal, state.maxHp - state.hp)
-  const cured = Math.min(fx.cure, state.infection)
+/** 준비 화면에서 쓸 수 있는 회복 소모품의 효과. 회복·치료가 없는 물건이면 null. */
+export function recoveryInfo(state, item) {
+  const data = itemDef(item.key)
+  if (data.kind !== 'consumable') return null
+  const total = data.cards.reduce((sum, key) => {
+    const fx = skillEffects(key, item.upgraded)
+    return { heal: sum.heal + (fx.heal || 0), cure: sum.cure + (fx.cure || 0) }
+  }, { heal: 0, cure: 0 })
+  if (!total.heal && !total.cure) return null
+  return { ...total, useful: (total.heal > 0 && state.hp < state.maxHp) || (total.cure > 0 && state.infection > 0) }
+}
+
+/** 전투 밖에서 회복 소모품 1회 사용. 효과가 없거나 쓸 수 없으면 null. */
+export function useRecovery(state, item, events = []) {
+  if (!item || item.uses <= 0 || !hasWorkingArm(state)) return null
+  const info = recoveryInfo(state, item)
+  if (!info) return null
+  const healed = Math.min(info.heal, state.maxHp - state.hp)
+  const cured = Math.min(info.cure, state.infection)
+  if (!healed && !cured) return null
+  const data = itemDef(item.key)
   state.hp += healed
   state.infection -= cured
   item.uses--
-  if (item.uses === 0) state.inventory = state.inventory.filter(entry => entry.uid !== item.uid)
+  const applied = [healed ? `체력 ${healed} 회복` : null, cured ? `감염 ${cured} 감소` : null].filter(Boolean).join(' · ')
+  log(state, events, `${data.name} 사용 · ${applied} · ${item.uses}/${data.uses}회 남음.`)
+  if (item.uses === 0) {
+    state.inventory = state.inventory.filter(entry => entry.uid !== item.uid)
+    emit(state, events, 'item-depleted', { item }, `${data.name} 소진.`)
+  }
   syncDeck(state)
-  log(state, events, `구급상자 사용 · 체력 ${healed} 회복 · 감염 ${cured} 감소 · ${item.uses}회 남음.`)
   return { healed, cured }
 }
 
