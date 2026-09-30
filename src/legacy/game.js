@@ -54,6 +54,8 @@ const displayFont = (() => {
     let modal = null;
     let returnFocus = null;
     let hoverCard = null;
+    let restoringHandFocus = false;
+    let dismissedPreviewCard = null;
     let hoverAim = null;
     let coinData = null;
     let coinResolver = null;
@@ -1026,10 +1028,12 @@ const displayFont = (() => {
       hoverAim = null;
 
       state.selected = state.selected === id ? null : id;
+      dismissedPreviewCard = state.selected === null ? id : null;
       render();
     }
 
     function cancelSelection() {
+      dismissedPreviewCard = state.selected;
       state.selected = null;
       hoverCard = null;
       hoverAim = null;
@@ -3074,12 +3078,6 @@ const displayFont = (() => {
       const selected = selectedCard();
       const card = selected || state.hand.find((c) => c.id === hoverCard);
       const root = $("preview");
-      // The hand card itself lifts and reveals its full effect text.
-      if (card && document.querySelector(`[data-focus="card-${card.id}"]`)) {
-        root.hidden = true;
-        return;
-      }
-
       if (!card || modal || state.phase !== "combat") {
         root.hidden = true;
         return;
@@ -3087,28 +3085,25 @@ const displayFont = (() => {
 
       const data = CARDS[card.key];
       root.replaceChildren();
-      appendArt(root, card.key);
+      root.classList.toggle("is-selected", Boolean(selected));
+      const heading = el("div", "preview-heading");
+      heading.append(
+        el("h3", "", data.name + (card.upgraded ? "+" : "")),
+        el("span", "preview-cost", `${rules.cardCost(card)} AP`),
+        el("small", "preview-state", selected ? "선택됨" : "미리보기")
+      );
       const content = el("div", "content");
       content.append(
-        el("div", "eyebrow", `${rules.cardCost(card)} AP / ${data.target === "self" ? "즉시 사용" : "대상 선택"}`),
-        el("h3", "", data.name + (card.upgraded ? "+" : "")),
-        el("p", "", summary(card)),
-        el("p", "instruction", selected ? aimText(card) : data.target === "self" ? "카드 선택 후 전투 화면을 클릭." : "카드 선택 후 대상을 클릭.")
+        el("p", "preview-effect", summary(card)),
+        el("p", "instruction", cardLockReason(card) || (selected ? aimText(card) : data.target === "self" ? "선택 후 전투 화면을 클릭하여 사용" : "선택 후 대상을 클릭하여 사용"))
       );
 
       if (data.noise && state.noise + data.noise >= 6) {
         content.append(el("p", "instruction", `사용 후 소음 ${state.noise + data.noise} · 증원 주의`));
       }
 
-      root.append(content);
+      root.append(heading, content);
       root.hidden = false;
-      const anchor = document.querySelector(`[data-focus="card-${card.id}"]`);
-      const scene = $("scene").getBoundingClientRect();
-      const box = root.getBoundingClientRect();
-      const rect = anchor?.getBoundingClientRect();
-      const center = rect ? rect.left + rect.width / 2 : scene.left + scene.width / 2;
-      root.style.left = `${clamp(center - box.width / 2, 8, Math.max(8, innerWidth - box.width - 8))}px`;
-      root.style.top = `${Math.max(8, (rect?.top ?? scene.bottom) - box.height - 10)}px`;
     }
 
     function render() {
@@ -3496,9 +3491,9 @@ const displayFont = (() => {
         node.append(el("kbd", "shortcut", index === 9 ? "0" : index + 1), cardTitle, body);
         node.addEventListener("pointerenter", (event) => {
           if (event.pointerType === "touch") return;
+          if (dismissedPreviewCard === card.id) return;
           if (injuryLock) {
             tooltip("사용 불가", injuryLock, node);
-            return;
           }
           if (selectedCard()) return;
           hoverCard = card.id;
@@ -3510,6 +3505,7 @@ const displayFont = (() => {
           openModal({ type: "cardDetail", title: info.name, subtitle: "CARD DETAIL", card, closable: true });
         });
         node.addEventListener("pointerleave", () => {
+          if (dismissedPreviewCard === card.id) dismissedPreviewCard = null;
           if (injuryLock) hideTooltip();
           if (!selectedCard()) {
             hoverCard = null;
@@ -3517,8 +3513,15 @@ const displayFont = (() => {
           }
         });
         node.addEventListener("focus", () => {
-          if (!selectedCard() && node.matches(":focus-visible")) {
+          if (!restoringHandFocus && !selectedCard() && node.matches(":focus-visible")) {
+            dismissedPreviewCard = null;
             hoverCard = card.id;
+            updatePreview();
+          }
+        });
+        node.addEventListener("blur", () => {
+          if (!selectedCard() && hoverCard === card.id && !node.matches(":hover")) {
+            hoverCard = null;
             updatePreview();
           }
         });
@@ -3531,7 +3534,12 @@ const displayFont = (() => {
       hand.scrollLeft = scroll;
       dealtCards.clear();
       if (focusKey) {
-        document.querySelector(`[data-focus="${focusKey}"]`)?.focus({ preventScroll: true });
+        restoringHandFocus = true;
+        try {
+          document.querySelector(`[data-focus="${focusKey}"]`)?.focus({ preventScroll: true });
+        } finally {
+          restoringHandFocus = false;
+        }
       }
       updatePreview();
     }

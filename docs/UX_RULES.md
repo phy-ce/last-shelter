@@ -17,7 +17,7 @@
 - Reference imagery informs presentation only. Do not copy its party systems, mind gauges, resistances, formation mechanics, or menu structure into game rules.
 
 - Resting hand cards keep a compact physical-card proportion and stay below the battlefield. Hover and keyboard focus only lift them slightly; they never grow into the enemy targeting area. Number keys select a card, and right-click opens its complete effect and source in a dedicated detail view.
-- Hand cards keep a 2.5:3.5 physical-card ratio in both resting and hover states. Hover never changes the card's height. The playable effect summary remains visible inside the lower card area on hover/focus; it must not be removed by compact-layout overrides.
+- Hand cards keep a 2.5:3.5 physical-card ratio in both resting and hover states. Hover never changes the card's height. Hover/focus reveals the complete playable effect in a fixed, readable panel above the left side of the hand. Selection pins that card's effect while aiming, even when the pointer crosses other cards; the panel updates the current target and predicted result and never intercepts targeting clicks. Use, cancellation, or a modal dismisses the preview.
 - Combat effect numbers come from content definitions and rule calculations. Conditional coin effects, delayed effects, ammo costs, noise, and exhaust retain distinct visible markers; they are not removed merely to shorten a card.
 - Rarity names remain in accessible labels. Detailed card summaries remain available to assistive technology.
 - Flavour text is on the card back, behind the 뒷면 chip, so the face carries only what is needed to play.
