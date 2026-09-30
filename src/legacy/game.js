@@ -3,7 +3,7 @@ import { bodyDiagram } from '../ui/body-diagram.js'
 import { mountUiIcons, uiIcon } from '../ui/icons.js'
 import { settings, motionOn, saveSettings } from '../core/settings.js'
 import { saveRun, loadRun, clearRun } from '../core/save.js'
-import { preloadArt } from '../boot/preload.js'
+import { preloadArt, cardImage } from '../boot/preload.js'
 import { Music } from '../audio/music.js'
 import { Sound } from '../audio/engine.js'
 import * as rules from '../core/combat-rules.js'
@@ -403,8 +403,8 @@ const displayFont = (() => {
 
     function appendArt(parent, key) {
       if (CARD_ART[key]) {
-        const art = document.createElement("img");
-        art.src = CARD_ART[key];
+        // Use the pre-decoded clone; a fresh <img> flashes blank on every re-render.
+        const art = cardImage(key) || Object.assign(document.createElement("img"), { src: CARD_ART[key] });
         art.alt = "";
         art.setAttribute("aria-hidden", "true");
         parent.append(art);
@@ -422,8 +422,8 @@ const displayFont = (() => {
     function itemArtNode(data, className) {
       const key = data.cards[0] || "pistol";
       if (CARD_ART[key]) {
-        const art = el("img", className);
-        art.src = CARD_ART[key];
+        const art = cardImage(key) || Object.assign(el("img"), { src: CARD_ART[key] });
+        art.className = className;
         art.alt = "";
         return art;
       }
