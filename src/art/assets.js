@@ -48,7 +48,7 @@ export const EFFECT_SPRITES = {
   muzzle: image('/assets/art/fx-muzzle-v1.webp'),
   impact: image('/assets/art/fx-impact-v1.webp'),
   slash: image('/assets/art/fx-slash-v1.webp'),
-  guard: image('/assets/art/fx-guard-v1.webp'),
+  guard: image('/assets/art/fx-guard-v2.webp'),
   heal: image('/assets/art/fx-heal-v1.webp'),
   quiet: image('/assets/art/fx-quiet-v1.webp'),
   focus: image('/assets/art/fx-focus-v1.webp'),
