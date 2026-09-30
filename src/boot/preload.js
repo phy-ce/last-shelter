@@ -54,7 +54,9 @@ function holdCardArt() {
 /** [필수, 나머지]. 같은 파일은 한 번만. */
 export function artTiers() {
   const first = [
-    ART.COMBAT_BACKGROUND, ART.SURVIVOR_SPRITES, ART.INFECTED, ART.EFFECT_SPRITES,
+    // The battle renderer has no fallback drawings, so every battle sprite is critical.
+    ART.COMBAT_BACKGROUND, ART.SURVIVOR, ART.SURVIVOR_SPRITES, ART.SURVIVOR_INJURED, ART.SURVIVOR_INJURED_BY_CLASS,
+    ART.INFECTED, ART.ENEMY_SPRITES, ART.ENEMY_INJURED_SPRITES, ART.EFFECT_SPRITES,
     ART.COIN_HEADS, ART.COIN_TAILS, ART.UPGRADE_EPAULETTE, CLASS_PORTRAITS, holdCardArt(),
   ]
   const seen = new Set()

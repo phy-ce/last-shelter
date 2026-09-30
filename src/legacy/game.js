@@ -10,7 +10,8 @@ import * as rules from '../core/combat-rules.js'
 import { CARDS, CARD_FLAVOR, STAGES, LIMBS, BURN_TEXT, skillEffects } from '../content/combat.js'
 import { ITEMS, RARITIES, itemDef, itemShape } from '../content/items.js'
 import { CLASSES, classDef } from '../content/classes.js'
-import { COMBAT_BACKGROUND, SURVIVOR, heroSprite, INFECTED, ENEMY_SPRITES, ENEMY_INJURED_SPRITES, UPGRADE_EPAULETTE, CARD_ART, COIN_HEADS, COIN_TAILS, EFFECT_SPRITES, assetReady } from '../art/assets.js'
+import { UPGRADE_EPAULETTE, CARD_ART, COIN_HEADS, COIN_TAILS } from '../art/assets.js'
+import { createBattleView } from '../render/battle-view.js'
 
 const $ = (id) => document.getElementById(id);
 mountUiIcons();
@@ -39,14 +40,18 @@ const displayFont = (() => {
     }, { capture: true });
 
     const canvas = $("battle");
-    const ctx = canvas.getContext("2d");
     const artCache = new Map();
-    const figureCache = new Map();
-    const background = document.createElement("canvas");
+    const battle = createBattleView(canvas, {
+      getState: () => state,
+      geometry: () => geometry(),
+      enemyPosition: (enemy) => enemyPosition(enemy),
+      partPosition: (enemy, part) => partPosition(enemy, part),
+      aimRings: () => aimRings(),
+      shouldRun: () => Boolean(state) && !modal && !document.hidden
+    });
 
     let state;
     let modal = null;
-    let frameHandle = 0;
     let returnFocus = null;
     let hoverCard = null;
     let hoverAim = null;
@@ -55,18 +60,6 @@ const displayFont = (() => {
     let deckGrouped = true;
     let gameVersion = 0;
     let injuryTimer;
-    let frameTime = 0;
-    let shake = 0;
-    let heroRecoil = 0;
-    let muzzle = 0;
-    let actionVisual = null;
-    let particles = [];
-    let impactFx = [];
-    let stains = [];
-    let texts = [];
-    let traces = [];
-    let ghosts = [];
-    let shells = [];
     let dealtCards = new Set();
     const enemySlots = new Map();
     let view = { w: 1200, h: 430, dpr: 1 };
@@ -276,24 +269,6 @@ const displayFont = (() => {
       }
     }
 
-    function figureArt(enemy) {
-      const mask = enemy
-        ? enemy.parts.map((p) => p.hp === 0 ? "1" : "0").join("")
-        : LIMBS.map((l) => state?.limbs[l.key] ? "1" : "0").join("");
-      const key = `${enemy?.type || "hero"}-${mask}-${settings.blood}`;
-      if (figureCache.has(key)) return figureCache.get(key);
-
-      const image = document.createElement("canvas");
-      image.width = 520;
-      image.height = 460;
-      const c = image.getContext("2d");
-      c.scale(2, 2);
-      c.translate(136, 209);
-      paintFigure(c, enemy, enemy ? {} : state?.limbs || {});
-      figureCache.set(key, image);
-      return image;
-    }
-
     function cardArt(key) {
       if (artCache.has(key)) return artCache.get(key);
       const image = document.createElement("canvas");
@@ -444,65 +419,6 @@ const displayFont = (() => {
       parent.append(badge);
     }
 
-    function paintBackground() {
-      background.width = 1400;
-      background.height = 520;
-      const c = background.getContext("2d");
-      const sky = c.createLinearGradient(0, 0, 0, 520);
-      sky.addColorStop(0, "#28202f");
-      sky.addColorStop(0.55, "#887961");
-      sky.addColorStop(1, "#201923");
-      c.fillStyle = sky;
-      c.fillRect(0, 0, 1400, 520);
-
-      for (let i = 0; i < 17; i++) {
-        const x = i * 88 - 30;
-        const height = 110 + randomAt(i + 5) * 170;
-        c.save();
-        c.translate(x, 335);
-        sketch(c, `M0 0 L3 ${-height} Q38 ${-height - 5} 72 ${-height + 3} L80 0Z`, i % 2 ? "#514747" : "#61544d", i, 140);
-        for (let j = 0; j < 16; j++) {
-          const wx = 12 + j % 3 * 20;
-          const wy = -height + 20 + Math.floor(j / 3) * 29;
-          if (wy < -12) brush(c, `M${wx} ${wy} L${wx} ${wy + 12}`, "#28202c", 6);
-        }
-        c.restore();
-      }
-
-      c.fillStyle = "#27202a";
-      c.fillRect(0, 330, 1400, 190);
-
-      for (let i = 0; i < 90; i++) {
-        const x = randomAt(i + 90) * 1400;
-        const y = 340 + randomAt(i + 210) * 180;
-        brush(c, `M${x} ${y} q30 -3 65 1`, "#b7a17c20", 1);
-      }
-
-      for (const side of [0, 1400]) {
-        c.save();
-        c.translate(side, 0);
-        if (side) c.scale(-1, 1);
-        sketch(c, "M0 0 L196 0 Q183 143 207 321 L0 389Z", "#302531", 6, 220);
-        for (let i = 0; i < 13; i++) {
-          const x = 15 + randomAt(i + 3) * 150;
-          brush(c, `M${x} -10 Q${x + 50} 95 ${x - 9} 201 Q${x - 30} 281 ${x + 19} 374`, "#654549", 3 + randomAt(i) * 8);
-          brush(c, `M${x - 2} 0 Q${x + 45} 95 ${x - 13} 207`, "#9e715870", 1);
-        }
-        c.restore();
-      }
-
-      brush(c, "M333 345 Q337 195 334 66 Q367 59 413 65", "#26202c", 5);
-      oval(c, 412, 70, 18, 4, "#d1b98f");
-      eye(c, 101, 149, 1.6);
-      eye(c, 1320, 221, 1.5);
-      paper(c, 1400, 520, 37);
-      const shade = c.createRadialGradient(700, 260, 150, 700, 260, 770);
-      shade.addColorStop(0, "#09061100");
-      shade.addColorStop(1, "#090611d9");
-      c.fillStyle = shade;
-      c.fillRect(0, 0, 1400, 520);
-    }
-
     function geometry() {
       const wideCombat = view.w / Math.max(1, view.h) > 2.7;
       return {
@@ -554,6 +470,16 @@ const displayFont = (() => {
       };
     }
 
+    // Limb picker rings drawn on the battle canvas while a single-target card is selected.
+    function aimRings() {
+      const selected = selectedCard();
+      if (!selected || CARDS[selected.key].target !== "single") return [];
+      return state.enemies.flatMap((enemy) => enemy.parts.filter((part) => part.hp > 0).map((part) => ({
+        ...partPosition(enemy, part),
+        active: hoverAim?.enemyId === enemy.id && hoverAim?.partKey === part.key
+      })));
+    }
+
     function positionStatuses() {
       if (!state) return;
       const g = geometry();
@@ -571,115 +497,55 @@ const displayFont = (() => {
         h: Math.max(1, box.height),
         dpr: Math.min(devicePixelRatio || 1, 2)
       };
-      canvas.width = Math.round(view.w * view.dpr);
-      canvas.height = Math.round(view.h * view.dpr);
+      battle.resize(view.w, view.h, view.dpr);
       positionStatuses();
     }
 
     function floatText(x, y, text, color = "#e6c995") {
-      texts.push({ x, y, text, color, life: 1.2 });
+      battle.floatText(x, y, text, color);
     }
 
     async function settleCombatPresentation(version, timeout = 1800) {
       const started = performance.now();
       while (version === gameVersion && performance.now() - started < timeout) {
-        if (!texts.length && !particles.length && !impactFx.length && !traces.length && !ghosts.length && !actionVisual) return;
+        if (!battle.busy()) return;
         await wait(50);
       }
     }
 
     function burst(x, y, count = 20, color = "#9d424e", blood = true) {
-      if (blood && !settings.blood) return;
-      const amount = motionOn() ? count : Math.min(5, count);
+      battle.burst(x, y, count, color, blood);
+    }
 
-      for (let i = 0; i < amount; i++) {
-        const angle = Math.random() * Math.PI * 2;
-        const speed = 35 + Math.random() * 150;
-        particles.push({
-          x,
-          y,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 25,
-          size: 1 + Math.random() * 2.6,
-          life: 0.35 + Math.random() * 0.6,
-          color,
-          blood
-        });
-      }
-
-      if (blood) {
-        stains.push({ x, y: geometry().ground + 5, size: 12 + count * 0.55, life: 12 });
-        stains = stains.slice(-25);
-      }
+    function targetPoint(enemy, partKey) {
+      const p = enemyPosition(enemy);
+      const part = enemy.parts.find((item) => item.key === partKey);
+      return part ? partPosition(enemy, part) : { x: p.x, y: p.y - 107 * p.scale };
     }
 
     function startVisual(key, targets = [], partKey = null) {
-      actionVisual = {
-        key,
-        start: performance.now(),
-        points: targets.map((enemy) => {
-          const p = enemyPosition(enemy);
-          const part = enemy.parts.find((item) => item.key === partKey);
-          return part ? partPosition(enemy, part) : { x: p.x, y: p.y - 107 * p.scale };
-        }),
-        shellMade: false
-      };
-
-      if (["pistol", "shotgun"].includes(key)) {
-        muzzle = key === "shotgun" ? 0.075 : 0.05;
-        heroRecoil = motionOn() ? key === "shotgun" ? 1 : 0.4 : 0;
-        shake = motionOn() ? key === "shotgun" ? 9 : 4 : 0;
-        const g = geometry();
-
-        for (const point of actionVisual.points) {
-          const count = key === "shotgun" ? 5 : 1;
-          for (let i = 0; i < count; i++) {
-            traces.push({
-              x1: g.heroX + 101 * g.scale,
-              y1: g.ground - 126 * g.scale,
-              x2: point.x + (Math.random() - 0.5) * 10,
-              y2: point.y + (i - (count - 1) / 2) * 7,
-              life: 0.07,
-              max: 0.07
-            });
-          }
-        }
-      }
+      battle.action(key, targets.map((enemy) => targetPoint(enemy, partKey)));
     }
 
     function impact(enemy, damage, partKey, style) {
-      const p = enemyPosition(enemy);
+      const point = targetPoint(enemy, partKey);
       const part = enemy.parts.find((item) => item.key === partKey);
-      const point = part ? partPosition(enemy, part) : { x: p.x, y: p.y - 107 * p.scale };
-      enemy.flash = 1;
-      enemy.recoil = motionOn() ? style === "shotgun" ? 1.3 : 0.65 : 0;
       floatText(point.x, point.y - 18, `−${damage}`, part ? "#dda38e" : "#e8ca9b");
-
-      if (damage > 0) {
-        impactFx.push({
-          x: point.x,
-          y: point.y,
-          life: style === "shotgun" ? 0.34 : 0.26,
-          max: style === "shotgun" ? 0.34 : 0.26,
-          scale: style === "shotgun" ? 1.25 : style === "knife" ? 0.72 : 1,
-          fire: ["fire", "burn"].includes(style)
-        });
-      }
-
-      if (style === "axe" && motionOn()) shake = Math.max(shake, 8);
+      battle.impact(enemy, point, damage, style);
     }
 
     function injuryEffect(key) {
       const limb = LIMBS.find((l) => l.key === key);
       const g = geometry();
       const arm = limb.type === "arm";
-      burst(
-        g.heroX + (key.startsWith("left") ? -16 : 25) * g.scale,
-        g.ground - (arm ? 107 : 28) * g.scale,
-        62
-      );
-      shake = motionOn() ? 23 : 0;
-      heroRecoil = motionOn() ? 1.8 : 0;
+      const point = {
+        x: g.heroX + (key.startsWith("left") ? -16 : 25) * g.scale,
+        y: g.ground - (arm ? 107 : 28) * g.scale
+      };
+      burst(point.x, point.y, 62);
+      battle.shake(23);
+      battle.heroRecoil(1.8);
+      battle.injury(point);
 
       const banner = $("injuryBanner");
       banner.classList.remove("depletion");
@@ -715,415 +581,9 @@ const displayFont = (() => {
       Sound.play("cardDrop");
     }
 
-    function drawFigure(enemy, x, y, scale, time, alpha = 1) {
-      const recoil = enemy ? enemy.recoil || 0 : heroRecoil;
-      const lunge = enemy?.lunge || 0;
-      const breathe = motionOn() ? Math.sin(time * 1.7 + (enemy?.id || 0)) * 0.004 : 0;
-      ctx.save();
-      ctx.globalAlpha = alpha;
-      oval(ctx, x, y + 5, 40 * scale, 7 * scale, "#07040c88");
-      ctx.translate(
-        x + (enemy ? recoil * 10 - lunge * 30 : -recoil * 10) * scale,
-        y
-      );
-      ctx.rotate((motionOn() ? enemy ? recoil * 0.07 - lunge * 0.1 : -recoil * 0.06 : 0) + breathe);
-      ctx.scale(scale, scale);
-      let sprite;
-      let hasBrokenPart = false;
-      if (enemy) {
-        const broken = new Set(enemy.parts.filter((part) => part.hp === 0).map((part) => part.key));
-        hasBrokenPart = broken.size > 0;
-        const damaged = ENEMY_INJURED_SPRITES[enemy.type];
-        sprite = broken.has("arm") && damaged?.arm ? damaged.arm : broken.has("leg") && damaged?.leg ? damaged.leg : ENEMY_SPRITES[enemy.type] || INFECTED;
-      } else {
-        sprite = state ? heroSprite(rules.heroAppearance(state)) : SURVIVOR;
-      }
-      if (hasBrokenPart) ctx.filter = "brightness(.76) saturate(.72)";
-      if (assetReady(sprite)) ctx.drawImage(sprite, -88, -258, 176, 264);
-      else ctx.drawImage(figureArt(enemy), -136, -209, 260, 230);
-      ctx.filter = "none";
-
-      if (enemy?.flash > 0 && motionOn()) {
-        ctx.globalAlpha = alpha * enemy.flash * 0.2;
-        ctx.globalCompositeOperation = "screen";
-        if (assetReady(sprite)) ctx.drawImage(sprite, -88, -258, 176, 264);
-        else ctx.drawImage(figureArt(enemy), -136, -209, 260, 230);
-      }
-      ctx.restore();
-    }
-
-    function drawAction(now) {
-      if (!actionVisual) return;
-      const a = actionVisual;
-      const t = (now - a.start) / 1000;
-      const g = geometry();
-      const s = g.scale;
-      const duration = a.key === "heal" ? 1.1 : a.key === "shotgun" ? 1.0 : a.key === "grenade" ? 0.9 : a.key === "flare" ? 0.95 : a.key === "flashbang" ? 0.78 : 0.65;
-
-      if (t > duration) {
-        actionVisual = null;
-        return;
-      }
-
-      if (["pistol", "shotgun"].includes(a.key)) {
-        const ejectAt = a.key === "shotgun" ? 0.59 : 0.055;
-
-        if (!a.shellMade && t >= ejectAt) {
-          a.shellMade = true;
-          shells.push({
-            x: g.heroX + 60 * s,
-            y: g.ground - 125 * s,
-            vx: -35,
-            vy: -65,
-            rotation: 0,
-            life: 0.55,
-            heavy: a.key === "shotgun"
-          });
-        }
-
-        if (a.key === "shotgun" && t > 0.55 && t < 0.94) {
-          const slide = Math.sin((t - 0.55) / 0.39 * Math.PI) * 12 * s;
-          line(ctx, [
-            [g.heroX + 55 * s - slide, g.ground - 116 * s],
-            [g.heroX + 77 * s - slide, g.ground - 116 * s]
-          ], "#97815f", 4 * s);
-        }
-      }
-
-      if (["knife", "axe"].includes(a.key)) {
-        const hitAt = a.key === "knife" ? 0.105 : 0.17;
-        if (t >= hitAt && t <= hitAt + 0.14) {
-          const sprite = EFFECT_SPRITES.slash;
-          if (assetReady(sprite)) {
-            ctx.save();
-            ctx.globalAlpha = 1 - (t - hitAt) / 0.14;
-            ctx.globalCompositeOperation = "screen";
-            for (const p of a.points) {
-              const size = (a.key === "knife" ? 72 : 104) * s;
-              ctx.drawImage(sprite, p.x - size / 2, p.y - size / 2, size, size);
-            }
-            ctx.restore();
-          }
-        }
-      }
-
-      if (a.key === "guard") {
-        const sprite = EFFECT_SPRITES.guard;
-        if (assetReady(sprite)) {
-          const progress = motionOn() ? clamp(t / 0.12, 0, 1) : 1;
-          const w = 118 * s;
-          const h = 168 * s;
-          ctx.save();
-          ctx.globalAlpha = clamp((0.65 - t) * 4, 0, 1);
-          ctx.drawImage(sprite, g.heroX + (30 + (1 - progress) * 18) * s, g.ground - h - 2 * s, w, h);
-          ctx.restore();
-        }
-      }
-
-      if (a.key === "heal") {
-        const sprite = EFFECT_SPRITES.heal;
-        if (assetReady(sprite)) {
-          const pulse = 1 + Math.sin(t * 16) * 0.05;
-          const size = 92 * s * pulse;
-          ctx.save();
-          ctx.globalAlpha = clamp((1.1 - t) * 5, 0, 1);
-          ctx.globalCompositeOperation = "screen";
-          ctx.drawImage(sprite, g.heroX - size / 2, g.ground - 120 * s - size / 2, size, size);
-          ctx.restore();
-        }
-      }
-
-      if (a.key === "quiet") {
-        const sprite = EFFECT_SPRITES.quiet;
-        if (assetReady(sprite)) {
-          const w = 150 * s;
-          const h = 120 * s;
-          ctx.save();
-          ctx.globalAlpha = clamp((0.65 - t) * 1.5, 0, 0.62);
-          ctx.drawImage(sprite, g.heroX - w / 2, g.ground - h, w, h);
-          ctx.restore();
-        }
-      }
-
-      if (a.key === "fire" && t < 0.34 && a.points.length) {
-        const target = a.points[Math.floor(a.points.length / 2)];
-        const progress = t / 0.34;
-        const x = g.heroX + (target.x - g.heroX) * progress;
-        const y = g.ground - 125 * s
-          + (target.y - (g.ground - 125 * s)) * progress
-          - (motionOn() ? Math.sin(progress * Math.PI) * 60 : 0);
-        const sprite = EFFECT_SPRITES.molotov;
-        if (assetReady(sprite)) {
-          ctx.save();
-          ctx.translate(x, y);
-          ctx.rotate(Math.atan2(target.y - (g.ground - 125 * s), target.x - g.heroX));
-          ctx.drawImage(sprite, -35 * s, -20 * s, 70 * s, 47 * s);
-          ctx.restore();
-        }
-      }
-
-      if (a.key === "flare" && a.points.length) {
-        const target = a.points[Math.floor(a.points.length / 2)];
-        const progress = clamp(t / 0.46, 0, 1);
-        const sx = g.heroX + 75 * s;
-        const sy = g.ground - 126 * s;
-        const x = sx + (target.x - sx) * progress;
-        const y = sy + (target.y - sy) * progress - Math.sin(progress * Math.PI) * 34;
-        const sprite = EFFECT_SPRITES.flare;
-        if (t < 0.5 && assetReady(sprite)) {
-          ctx.save();
-          ctx.translate(x, y);
-          ctx.rotate(Math.atan2(target.y - sy, target.x - sx));
-          ctx.globalAlpha = t > 0.52 ? clamp((0.72 - t) / 0.2, 0, 1) : 1;
-          ctx.globalCompositeOperation = "screen";
-          ctx.drawImage(sprite, -48, -24, 96, 48);
-          ctx.restore();
-        }
-      }
-
-      if (a.key === "grenade" && t > 0.18) {
-        const sprite = EFFECT_SPRITES.grenade;
-        if (assetReady(sprite)) {
-          const progress = clamp((t - 0.18) / 0.28, 0, 1);
-          const alpha = clamp((0.9 - t) / 0.28, 0, 1);
-          for (const point of a.points) {
-            const size = (80 + progress * 135) * s;
-            ctx.save();
-            ctx.globalAlpha = alpha;
-            ctx.globalCompositeOperation = "screen";
-            ctx.drawImage(sprite, point.x - size / 2, point.y - size / 2, size, size);
-            ctx.restore();
-          }
-        }
-      }
-
-      if (a.key === "focus") {
-        const target = { x: g.heroX, y: g.ground - 120 * s };
-        const sprite = EFFECT_SPRITES.focus;
-        if (assetReady(sprite)) {
-          const w = 92 * s;
-          const h = 58 * s;
-          ctx.save();
-          ctx.globalAlpha = clamp((0.65 - t) * 1.2, 0, 0.8);
-          ctx.globalCompositeOperation = "screen";
-          ctx.drawImage(sprite, g.heroX - w / 2, g.ground - 222 * s, w, h);
-          ctx.restore();
-        }
-        const impact = EFFECT_SPRITES.flareImpact;
-        if (t >= 0.34 && assetReady(impact)) {
-          const bloom = clamp((t - 0.34) / 0.22, 0, 1);
-          const fade = clamp((0.95 - t) / 0.34, 0, 1);
-          const size = (70 + bloom * 190) * s;
-          ctx.save();
-          ctx.globalAlpha = fade;
-          ctx.globalCompositeOperation = "screen";
-          ctx.drawImage(impact, target.x - size / 2, target.y - size / 2, size, size);
-          ctx.restore();
-        }
-      }
-
-      if (a.key === "flashbang" && a.points.length) {
-        const center = a.points.reduce((sum, point) => ({ x: sum.x + point.x, y: sum.y + point.y }), { x: 0, y: 0 });
-        center.x /= a.points.length;
-        center.y /= a.points.length;
-        const sprite = EFFECT_SPRITES.flashbang;
-        if (assetReady(sprite)) {
-          const bloom = motionOn() ? clamp(t / 0.16, 0, 1) : 1;
-          const fade = clamp((0.78 - t) / 0.42, 0, 1);
-          const size = (110 + bloom * 310) * s;
-          ctx.save();
-          ctx.globalAlpha = fade;
-          ctx.globalCompositeOperation = "screen";
-          ctx.drawImage(sprite, center.x - size / 2, center.y - size / 2, size, size);
-          ctx.restore();
-        }
-      }
-    }
-
-    function drawFrame(now) {
-      // 프레임 중 예외가 나도 다음 resumeFrames()가 다시 켤 수 있도록 먼저 비운다.
-      frameHandle = 0;
-      const dt = Math.min((now - frameTime) / 1000 || 0, 0.04);
-      frameTime = now;
-      const time = now / 1000;
-      const g = geometry();
-
-      ctx.setTransform(view.dpr, 0, 0, view.dpr, 0, 0);
-      ctx.clearRect(0, 0, view.w, view.h);
-      ctx.save();
-
-      if (motionOn() && shake > 0) {
-        ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake * 0.55);
-      }
-
-      const scene = assetReady(COMBAT_BACKGROUND) ? COMBAT_BACKGROUND : background;
-      const sceneW = assetReady(COMBAT_BACKGROUND) ? COMBAT_BACKGROUND.naturalWidth : 1400;
-      const sceneH = assetReady(COMBAT_BACKGROUND) ? COMBAT_BACKGROUND.naturalHeight : 520;
-      const sceneCover = Math.max(view.w / sceneW, view.h / sceneH);
-      ctx.drawImage(
-        scene,
-        (view.w - sceneW * sceneCover) / 2,
-        (view.h - sceneH * sceneCover) / 2,
-        sceneW * sceneCover,
-        sceneH * sceneCover
-      );
-
-      for (const stain of stains) {
-        stain.life -= dt;
-        ctx.globalAlpha = Math.min(0.5, stain.life / 3);
-        oval(ctx, stain.x, stain.y, stain.size, 4, "#66233b");
-      }
-      ctx.globalAlpha = 1;
-      stains = stains.filter((p) => p.life > 0);
-
-      drawFigure(null, g.heroX, g.ground, g.scale * 0.9, time);
-
-      const selected = selectedCard();
-
-      for (const enemy of state.enemies) {
-        const p = enemyPosition(enemy);
-        drawFigure(enemy, p.x, p.y, p.scale, time);
-        enemy.recoil = Math.max(0, enemy.recoil - dt * 4);
-        enemy.flash = Math.max(0, enemy.flash - dt * 4);
-
-        if (enemy.burn > 0 && motionOn()) {
-          const sprite = EFFECT_SPRITES.burn;
-          if (assetReady(sprite)) {
-            const pulse = 1 + Math.sin(time * 7 + enemy.id) * 0.035;
-            const w = 156 * p.scale * pulse;
-            const h = 104 * p.scale * pulse;
-            ctx.save();
-            ctx.globalAlpha = 0.84;
-            ctx.globalCompositeOperation = "screen";
-            ctx.drawImage(sprite, p.x - w / 2, p.y - h + 12 * p.scale, w, h);
-            ctx.restore();
-          }
-        }
-
-        if (selected && CARDS[selected.key].target === "single") {
-          for (const part of enemy.parts.filter((item) => item.hp > 0)) {
-            const pp = partPosition(enemy, part);
-            const active = hoverAim?.enemyId === enemy.id && hoverAim?.partKey === part.key;
-            ctx.beginPath();
-            ctx.arc(pp.x, pp.y, pp.radius, 0, Math.PI * 2);
-            ctx.strokeStyle = active ? "#efd49c" : "#cba57099";
-            ctx.lineWidth = active ? 2 : 1;
-            ctx.stroke();
-          }
-        }
-      }
-
-      for (const ghost of ghosts) {
-        ghost.life -= dt;
-        ctx.save();
-        ctx.translate(ghost.x, ghost.y);
-        const t = 1 - ghost.life / ghost.max;
-        ctx.rotate(motionOn() ? t * 0.65 : 0);
-        drawFigure(ghost.enemy, 0, motionOn() ? t * 18 : 0, ghost.scale, time, Math.max(0, ghost.life / ghost.max));
-        ctx.restore();
-      }
-      ghosts = ghosts.filter((p) => p.life > 0);
-
-      drawAction(now);
-
-      if (muzzle > 0 && motionOn()) {
-        const x = g.heroX + 101 * g.scale;
-        const y = g.ground - 126 * g.scale;
-        const sprite = EFFECT_SPRITES.muzzle;
-        if (assetReady(sprite)) {
-          ctx.save();
-          ctx.globalAlpha = clamp(muzzle * 18, 0, 1);
-          ctx.globalCompositeOperation = "screen";
-          ctx.drawImage(sprite, x - 18 * g.scale, y - 24 * g.scale, 82 * g.scale, 48 * g.scale);
-          ctx.restore();
-        }
-      }
-
-      const impactSprite = EFFECT_SPRITES.impact;
-      for (const fx of impactFx) {
-        fx.life -= dt;
-        if (!assetReady(impactSprite)) continue;
-        const progress = 1 - fx.life / fx.max;
-        const size = (48 + progress * 54) * fx.scale * g.scale;
-        ctx.save();
-        ctx.globalAlpha = clamp(fx.life / fx.max, 0, 1) * (fx.fire ? 0.65 : 0.9);
-        ctx.globalCompositeOperation = fx.fire ? "screen" : "source-over";
-        ctx.drawImage(impactSprite, fx.x - size / 2, fx.y - size / 2, size, size);
-        ctx.restore();
-      }
-      impactFx = impactFx.filter((fx) => fx.life > 0);
-
-      for (const trace of traces) {
-        trace.life -= dt;
-        if (motionOn()) {
-          ctx.globalAlpha = Math.max(0, trace.life / trace.max);
-          line(ctx, [[trace.x1, trace.y1], [trace.x2, trace.y2]], "#e2c598", 1);
-        }
-      }
-      traces = traces.filter((p) => p.life > 0);
-      ctx.globalAlpha = 1;
-
-      for (const shell of shells) {
-        shell.life -= dt;
-        if (motionOn()) {
-          shell.x += shell.vx * dt;
-          shell.y += shell.vy * dt;
-          shell.vy += 340 * dt;
-          shell.rotation += dt * 13;
-        }
-
-        ctx.save();
-        ctx.globalAlpha = clamp(shell.life * 4, 0, 1);
-        ctx.translate(shell.x, shell.y);
-        ctx.rotate(shell.rotation);
-        ctx.fillStyle = shell.heavy ? "#885646" : "#aa8c55";
-        ctx.fillRect(-3, -1.5, shell.heavy ? 8 : 5, 3);
-        ctx.restore();
-      }
-      shells = shells.filter((p) => p.life > 0);
-
-      for (const particle of particles) {
-        particle.life -= dt;
-        const x = particle.x;
-        const y = particle.y;
-        if (motionOn()) {
-          particle.x += particle.vx * dt;
-          particle.y += particle.vy * dt;
-          particle.vy += 290 * dt;
-        }
-        ctx.globalAlpha = clamp(particle.life * 2.5, 0, 1);
-        line(ctx, [[x, y], [particle.x + 0.1, particle.y + 0.1]], particle.color, particle.size);
-      }
-      particles = particles.filter((p) => p.life > 0);
-
-      for (const item of texts) {
-        item.life -= dt;
-        if (motionOn()) item.y -= dt * 23;
-        ctx.globalAlpha = clamp(item.life * 2, 0, 1);
-        ctx.font = `bold 17px ${displayFont()}`;
-        ctx.textAlign = "center";
-        ctx.strokeStyle = "#17101b";
-        ctx.lineWidth = 3;
-        ctx.strokeText(item.text, item.x, item.y);
-        ctx.fillStyle = item.color;
-        ctx.fillText(item.text, item.x, item.y);
-      }
-      texts = texts.filter((p) => p.life > 0);
-
-      ctx.globalAlpha = 1;
-      ctx.restore();
-      shake = Math.max(0, shake - dt * 35);
-      muzzle = Math.max(0, muzzle - dt);
-      heroRecoil = Math.max(0, heroRecoil - dt * 4);
-      if (modal || document.hidden) return;
-      frameHandle = requestAnimationFrame(drawFrame);
-    }
-
-    // 모달이 열려 있거나 탭이 보이지 않으면 캔버스 루프를 멈추고, 필요할 때만 다시 돈다.
+    // The render loop idles while a modal is open or the tab is hidden; this wakes it.
     function resumeFrames() {
-      if (frameHandle || !state || modal || document.hidden) return;
-      frameTime = performance.now();
-      frameHandle = requestAnimationFrame(drawFrame);
+      battle.resume();
     }
 
     // ── 규칙 어댑터: 상태는 rules가 바꾸고, 여기서는 현재 state를 넘겨주기만 한다. ──
@@ -1269,7 +729,8 @@ const displayFont = (() => {
             const p = partPosition(ev.enemy, ev.part);
             burst(p.x, p.y, 40);
             floatText(p.x, p.y - 40, `${ev.part.name} 파괴`, "#e4ad8e");
-            if (motionOn()) shake = Math.max(shake, 12);
+            battle.shake(12);
+            battle.limbBroken(p);
             break;
           }
           case "stagger":
@@ -1295,9 +756,16 @@ const displayFont = (() => {
             Sound.play("enemyScream");
             break;
           }
-          case "enemy-buff": // 로그만. 연출은 프레젠테이션 쪽에서 채운다.
+          case "enemy-buff": {
+            const p = enemyPosition(ev.enemy);
+            floatText(p.x, p.y - 190 * p.scale, `힘 +${ev.strength}`, "#e8927a");
+            battle.enemyBuff(ev.enemy);
+            Sound.play("powerUp");
             break;
-          case "enemy-summon": // 로그만. 합류 연출은 프레젠테이션 쪽에서 채운다.
+          }
+          case "enemy-summon":
+            // The new enemy gets its slot on the next frame; the view plays its entrance then.
+            battle.summoned(ev.summoned);
             break;
           case "enemy-regen": {
             const p = enemyPosition(ev.enemy);
@@ -1315,9 +783,10 @@ const displayFont = (() => {
             if (ev.damage) {
               // 사지 강타에 새 훼손 효과음을 붙이지 않습니다.
               if (!ev.coin) Sound.play("hit");
-              heroRecoil = motionOn() ? 1 : 0;
-              shake = motionOn() ? 8 : 0;
+              battle.heroRecoil(1);
+              battle.shake(8);
               burst(g.heroX, g.ground - 107 * g.scale, 25);
+              battle.playerHit({ x: g.heroX, y: g.ground - 107 * g.scale }, ev.damage);
             } else {
               Sound.play("blockHit");
               burst(g.heroX + 44 * g.scale, g.ground - 87 * g.scale, 15, "#ad956f", false);
@@ -1336,7 +805,8 @@ const displayFont = (() => {
             const g = geometry();
             floatText(g.heroX, g.ground - 184 * g.scale, `체력 −${ev.damage} · 감염 피해`, "#ef8c79");
             if (ev.damage) {
-              heroRecoil = motionOn() ? 0.45 : 0;
+              battle.heroRecoil(0.45);
+              battle.heroHurt(0.6);
               Sound.play("hit");
             }
             break;
@@ -1389,7 +859,9 @@ const displayFont = (() => {
             Sound.play({ fireball: "flare", foresight: "drawCard" }[ev.card.key] || "magicHit");
             for (const target of ev.targets) { const p = enemyPosition(target); floatText(p.x, p.y - 200 * p.scale, `${CARDS[ev.card.key].name} 발동`, "#dfe6ff"); }
             if (!ev.targets.length) { const g = geometry(); floatText(g.heroX, g.ground - 200 * g.scale, `${CARDS[ev.card.key].name} 발동`, "#dfe6ff"); }
-            if (motionOn()) shake = Math.max(shake, 6);
+            battle.shake(6);
+            const g = geometry();
+            battle.spellBurst(ev.targets.length ? ev.targets.map((target) => targetPoint(target, null)) : [{ x: g.heroX, y: g.ground - 120 * g.scale }]);
             break;
           }
           case "skill": {
@@ -1468,18 +940,7 @@ const displayFont = (() => {
     function resetVisuals() {
       hoverCard = null;
       hoverAim = null;
-      particles = [];
-      impactFx = [];
-      stains = [];
-      texts = [];
-      traces = [];
-      ghosts = [];
-      shells = [];
-      actionVisual = null;
-      shake = 0;
-      heroRecoil = 0;
-      muzzle = 0;
-      figureCache.clear();
+      battle.reset();
       clearTimeout(injuryTimer);
       $("injuryBanner").classList.remove("active");
     }
@@ -1495,11 +956,6 @@ const displayFont = (() => {
       rules.setUid(saved.uid);
       battleMusic();
       present(rules.normalizeBag(state));
-      for (const enemy of state.enemies) {
-        enemy.recoil = 0;
-        enemy.flash = 0;
-        enemy.lunge = 0;
-      }
       resetVisuals();
       dealtCards.clear();
       resizeCanvas();
@@ -1518,9 +974,7 @@ const displayFont = (() => {
       present(rules.startBattle(state));
       hoverCard = null;
       hoverAim = null;
-      stains = [];
-      ghosts = [];
-      actionVisual = null;
+      battle.clearStains();
       startTurn();
     }
 
@@ -1586,10 +1040,7 @@ const displayFont = (() => {
     function cleanEnemies() {
       const dead = state.enemies.filter((e) => e.hp <= 0);
       if (dead.length) Sound.play("zombieDeath");
-      for (const enemy of dead) {
-        const p = enemyPosition(enemy);
-        ghosts.push({ enemy, ...p, life: 0.6, max: 0.6 });
-      }
+      for (const enemy of dead) battle.kill(enemy);
       rules.cleanEnemies(state);
     }
 
@@ -1822,13 +1273,12 @@ const displayFont = (() => {
         let penetrated = false;
 
         for (let hit = 0; hit < intent.hits; hit++) {
-          enemy.lunge = motionOn() ? 1 : 0;
+          battle.lunge(enemy);
           await wait(motionOn() ? 110 : 0);
           const hitEvents = [];
           const { damage } = rules.enemyHit(state, enemy, intent, hit, hitEvents);
           penetrated ||= damage > 0;
           present(hitEvents);
-          enemy.lunge = 0;
           render();
           if (checkResult()) return;
           await wait(motionOn() ? 190 : 0);
@@ -2064,11 +1514,7 @@ const displayFont = (() => {
           if (key === "music") {
             Music.updateVolume();
           } else if (key === "blood") {
-            figureCache.clear();
-            if (!settings.blood) {
-              particles = particles.filter((p) => !p.blood);
-              stains = [];
-            }
+            if (!settings.blood) battle.clearBlood();
           } else {
             syncMotion();
           }
@@ -3386,10 +2832,7 @@ const displayFont = (() => {
 
     function syncMotion() {
       document.body.classList.toggle("low-motion", !motionOn());
-      if (!motionOn()) {
-        shake = 0;
-        heroRecoil = 0;
-      }
+      if (!motionOn()) battle.stopMotion();
     }
 
     function hideTooltip() {
@@ -4284,15 +3727,26 @@ const displayFont = (() => {
       if (!document.hidden) resumeFrames();
     });
 
+    // Dev-only handle for tools/smoke/shots.mjs to trigger and slow down battle effects.
+    if (import.meta.env.DEV) window.__battle = { view: battle, targetPoint, geometry, enemyPosition, state: () => state };
+
     syncMotion();
-    paintBackground();
     resizeCanvas();
     // 첫 화면·첫 전투 그림을 다 받은 뒤 시작한다. 나머지는 preloadArt가 뒤에서 받는다.
+    // The battle renderer starts after that so every battle texture is uploaded before the first fight.
     openModal({ type: "options", title: "불러오는 중", subtitle: "LOADING", description: "그림 준비 중", options: [] });
     preloadArt((done, total) => {
       const line = $("modal").querySelector(".description");
       if (line) line.textContent = `그림 준비 중 · ${done} / ${total}`;
-    }).then(boot);
+    }).then(() => {
+      const line = $("modal").querySelector(".description");
+      if (line) line.textContent = "화면 준비 중";
+      return battle.init();
+    }).then(boot, (error) => {
+      console.error(error);
+      const line = $("modal").querySelector(".description");
+      if (line) line.textContent = "그래픽을 시작하지 못했습니다. 브라우저의 하드웨어 가속(WebGL)을 켜 주세요.";
+    });
 
     function boot() {
     Music.play("explore");
