@@ -12,7 +12,8 @@ await mkdir(out, { recursive: true })
 const proc = spawn(chrome, [
   '--headless=new', `--remote-debugging-port=${port}`, '--window-size=1400,900',
   '--user-data-dir=' + out + '/chrome-profile', '--no-first-run', '--autoplay-policy=no-user-gesture-required',
-  '--disable-gpu', '--mute-audio', 'about:blank',
+  // The battle scene is WebGL (PixiJS); without a GPU, Chrome needs SwiftShader allowed explicitly.
+  '--disable-gpu', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--mute-audio', 'about:blank',
 ], { stdio: 'ignore' })
 
 const sleep = (ms) => new Promise(r => setTimeout(r, ms))
@@ -45,7 +46,9 @@ const pickClass = () => evaluate(`(async () => {
   document.querySelector('#modal .class-confirm-button')?.click()
   return title
 })()`)
-async function goto() { await send('Page.navigate', { url: 'http://localhost:8123/' }); await sleep(2500); await pickClass(); await sleep(600) }
+// Loading waits for every battle sprite and the WebGL renderer, so poll until the loading modal is gone.
+const loaded = () => evaluate(`(async () => { for (let i = 0; i < 100; i++) { const t = document.querySelector('#modal h2')?.textContent; if (t && t !== '불러오는 중') return t; await new Promise(r => setTimeout(r, 100)) } return 'TIMEOUT' })()`)
+async function goto() { await send('Page.navigate', { url: 'http://localhost:8123/' }); await sleep(500); await loaded(); await pickClass(); await sleep(600) }
 
 await goto()
 if (scenario === 'discard' || scenario === 'resume') {
@@ -60,18 +63,23 @@ if (scenario === 'discard' || scenario === 'resume') {
   await sleep(1200)
 }
 
-// Frame liveness: sample canvas pixels over time and check the enemy hover recoil is animating.
-const probe = `(async () => {
-  const c = document.getElementById('battle');
-  const ctx = c.getContext('2d');
-  const sum = () => { const d = ctx.getImageData(0, 0, c.width, c.height).data; let s = 0; for (let i = 0; i < d.length; i += 4009) s += d[i]; return s };
-  const a = sum(); await new Promise(r => setTimeout(r, 700)); const b = sum();
-  return JSON.stringify({ canvasW: c.width, canvasH: c.height, pixelSumA: a, pixelSumB: b, changed: a !== b,
-    overlayHidden: document.getElementById('overlay').hidden, appInert: document.getElementById('app').inert,
-    hand: document.querySelectorAll('#hand .card').length, location: document.getElementById('location').textContent,
-    phase: document.getElementById('phase').textContent, enemies: document.querySelectorAll('#targets .target').length });
-})()`
-console.log('probe:', await evaluate(probe))
+// Frame liveness: screenshot the battle canvas twice and check the idle animation changed it.
+// (A WebGL canvas can't be read back through a 2D context, so compare CDP screenshots instead.)
+const pageState = `JSON.stringify({ overlayHidden: document.getElementById('overlay').hidden, appInert: document.getElementById('app').inert,
+  hand: document.querySelectorAll('#hand .card').length, location: document.getElementById('location').textContent,
+  phase: document.getElementById('phase').textContent, enemies: document.querySelectorAll('#targets .target').length })`
+async function canvasShot() {
+  const r = JSON.parse(await evaluate(`(() => { const r = document.getElementById('battle').getBoundingClientRect(); return JSON.stringify({ x: r.left, y: r.top, width: r.width, height: r.height, cw: document.getElementById('battle').width, ch: document.getElementById('battle').height }) })()`))
+  const shot = await send('Page.captureScreenshot', { format: 'png', clip: { x: r.x, y: r.y, width: r.width, height: r.height, scale: 1 } })
+  return { data: shot.result?.data || '', r }
+}
+const probe = {
+  async run() {
+    const a = await canvasShot(); await sleep(700); const b = await canvasShot()
+    return JSON.stringify({ canvasW: a.r.cw, canvasH: a.r.ch, shotBytes: a.data.length, changed: a.data !== b.data, ...JSON.parse(await evaluate(pageState)) })
+  },
+}
+console.log('probe:', await probe.run())
 await send('Page.captureScreenshot', { format: 'png' }).then(r => writeFile(`${out}/shot-${scenario}.png`, Buffer.from(r.result.data, 'base64')))
 
 // Play a card at an enemy and verify the effect finishes (phase returns to 내 행동).
@@ -88,7 +96,7 @@ const play = `(async () => {
   return JSON.stringify({ mid, after: document.getElementById('phase').textContent, log: document.getElementById('lastLog').textContent, hand: document.querySelectorAll('#hand .card').length });
 })()`
 console.log('play:', await evaluate(play))
-console.log('probe2:', await evaluate(probe))
+console.log('probe2:', await probe.run())
 await send('Page.captureScreenshot', { format: 'png' }).then(r => writeFile(`${out}/shot-${scenario}-2.png`, Buffer.from(r.result.data, 'base64')))
 
 const endTurn = `(async () => {
@@ -107,7 +115,7 @@ const playSelf = `(async () => {
 })()`
 console.log('playSelf:', await evaluate(playSelf))
 console.log('endTurn:', await evaluate(endTurn))
-console.log('probe3:', await evaluate(probe))
+console.log('probe3:', await probe.run())
 console.log('--- console/log entries ---')
 for (const l of logs) console.log(l)
 ws.close(); proc.kill()
