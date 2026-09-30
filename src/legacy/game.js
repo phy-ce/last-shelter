@@ -624,6 +624,7 @@ const displayFont = (() => {
       if (fx.energy) parts.push(`행동력 +${fx.energy}`);
       if (fx.draw) parts.push(`${fx.draw}장 뽑기`);
       if (fx.numb) parts.push("이번 턴 부상 무시");
+      if (fx.smoke) parts.push(`연막 ${fx.smoke}턴 · 적 공격 25% 회피`);
       if (data.noise) parts.push(`소음 +${data.noise}`);
       if (data.delayed) parts.unshift("예약");
       const notes = [];
@@ -677,6 +678,7 @@ const displayFont = (() => {
         if (fx.energy) effects.push(`행동력 +${fx.energy}`);
         if (fx.draw) effects.push(`${fx.draw}장 뽑기`);
         if (fx.numb) effects.push("이번 턴 부상 무시");
+        if (fx.smoke) effects.push(`연막 ${fx.smoke}턴 · 적 공격 25% 회피`);
         if (data.noise) effects.push(`소음 +${data.noise}`);
         lines.push(`${data.delayed ? "예약 · " : ""}${effects.join(" · ")}`);
       }
@@ -779,6 +781,13 @@ const displayFont = (() => {
           case "evade": {
             const g = geometry();
             floatText(g.heroX, g.ground - 135 * g.scale, "회피");
+            break;
+          }
+          case "smoke-evade": {
+            const g = geometry();
+            floatText(g.heroX + ev.hit * 14, g.ground - 150 * g.scale, "연막 · 회피", "#c9ccd2");
+            battle.smokeEvade();
+            Sound.play("blockHit");
             break;
           }
           case "player-hit": {
@@ -3195,6 +3204,9 @@ const displayFont = (() => {
       if (state.numb) {
         playerStatuses.push(["numb", "진통제 · 이번 턴 부상 무시", "진통제", "이번 턴 동안 팔 부상의 공격 −2가 사라지고, 팔 부상으로 잠긴 장비 카드를 쓸 수 있습니다. 턴이 끝나면 해제."]);
       }
+      if (state.smoke > 0) {
+        playerStatuses.push(["smoke", `연막 · ${state.smoke}턴`, "연막", `적 공격을 한 번마다 ${Math.round(rules.SMOKE_EVADE * 100)}% 확률로 회피합니다. 적 턴이 끝날 때마다 1턴씩 줄어듭니다.`]);
+      }
       if (state.drawPenalty > 0) {
         playerStatuses.push(["grab", `붙잡힘 · 다음 턴 드로우 −${state.drawPenalty}`, "붙잡힘", "다음 턴 시작 드로우가 줄어듭니다. 그 턴이 끝나면 해제."]);
       } else if (state.grabbed > 0) {
@@ -3210,7 +3222,7 @@ const displayFont = (() => {
         heroStatusStack.append(statusToken({
           kind: kind === "infection" && rules.hasFever(state) ? "fever" : kind,
           icon: `status-${kind}`,
-          value: kind === "strength" ? `+${state.strength}` : kind === "block" ? state.block : kind === "injury" ? injuredCount() : kind === "noise" ? state.noise : kind === "infection" ? state.infection : kind === "grab" ? state.drawPenalty || state.grabbed : kind === "pending" ? pendingValue : null,
+          value: kind === "strength" ? `+${state.strength}` : kind === "block" ? state.block : kind === "injury" ? injuredCount() : kind === "noise" ? state.noise : kind === "infection" ? state.infection : kind === "grab" ? state.drawPenalty || state.grabbed : kind === "smoke" ? state.smoke : kind === "pending" ? pendingValue : null,
           label, title, tip,
           action: kind === "injury" ? showBody : null
         }));

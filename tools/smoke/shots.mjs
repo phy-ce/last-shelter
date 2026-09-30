@@ -42,7 +42,7 @@ const started = await evaluate(`(async () => {
   const wait = (ms) => new Promise(r => setTimeout(r, ms))
   for (let i = 0; i < 40; i++) {
     if (document.getElementById('overlay').hidden) return true
-    const fresh = [...document.querySelectorAll('#modal button')].find(b => b.textContent.includes('새로 시작'))
+    const fresh = [...document.querySelectorAll('#modal button')].find(b => b.textContent.includes('새 게임'))
     if (fresh) fresh.click()
     else {
       document.querySelectorAll('#modal .class-choice, #modal button.choice')[${classIndex}]?.click()

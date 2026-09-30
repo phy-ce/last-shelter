@@ -43,8 +43,8 @@ export const CARDS = {
       },
       smoke: {
         name: "연막", rarity: "uncommon", cost: 1, type: "skill", target: "self",
-        text: (u) => `방어도 ${u ? 8 : 6}. 소음 ${u ? 7 : 6} 감소.`,
-        effects: (u) => ({ sound: "quiet", block: u ? 8 : 6, noiseDown: u ? 7 : 6 })
+        text: (u) => `방어도 6. 연막 ${u ? 2 : 1}턴: 적 공격 25% 회피.`,
+        effects: (u) => ({ sound: "quiet", block: 6, smoke: u ? 2 : 1 })
       },
       grenade: {
         name: "세열 수류탄", rarity: "rare", cost: 2, type: "attack", target: "all",
@@ -132,8 +132,8 @@ export const CARDS = {
         cost: 1,
         type: "skill",
         target: "self",
-        text: (u) => `방어도 ${u ? 7 : 5} 획득.\n소음 ${u ? 5 : 4} 감소.`,
-        effects: (u) => ({ sound: "quiet", block: u ? 7 : 5, noiseDown: u ? 5 : 4 })
+        text: (u) => `방어도 ${u ? 7 : 5} 획득.\n소음 ${u ? 3 : 2} 감소.`,
+        effects: (u) => ({ sound: "quiet", block: u ? 7 : 5, noiseDown: u ? 3 : 2 })
       },
       axe: {
         name: "소방 도끼",

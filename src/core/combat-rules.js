@@ -68,6 +68,7 @@ export const HAND_LIMIT = 10
 export const BASE_DRAW = 5
 export const BASE_ENERGY = 3
 export const NOISE_THRESHOLD = 6
+export const SMOKE_EVADE = 0.25 // 연막: 적 공격 한 번마다 회피 확률
 export const MAX_ENEMIES = 5
 // 감염: 턴 시작마다 감염/INFECTION_DIVISOR 만큼 방어 무시 피해. FEVER 이상이면 행동력 −1.
 export const INFECTION_DIVISOR = 2
@@ -99,6 +100,7 @@ export function createState(classId = 'survivor') {
     drawPenalty: 0,
     grabbed: 0,
     numb: false, // 진통제: 이번 턴 사지 부상 무시
+    smoke: 0, // 연막: 남은 적 턴 수
     pending: [], // 예약 주문: 다음 턴 시작에 발동 { key, upgraded, targetId, partKey }
     phase: 'combat',
     target: null,
@@ -486,6 +488,7 @@ export function startBattle(state, events = []) {
   state.noise = 0
   state.block = 0
   state.strength = 0
+  state.smoke = 0
   state.turn = 0
   state.selected = null
   state.deck = buildDeck(state)
@@ -808,6 +811,7 @@ export function applySkill(state, card, events = []) {
   if (fx.energy) { state.energy += fx.energy; parts.push(`행동력 +${fx.energy}`) }
   if (fx.draw) parts.push(`${drawCards(state, fx.draw, events)}장 뽑기`)
   if (fx.numb) { state.numb = true; parts.push('이번 턴 부상 무시') }
+  if (fx.smoke) { state.smoke = (state.smoke || 0) + fx.smoke; parts.push(`연막 ${state.smoke}턴`) }
   if (data.noise) { state.noise += data.noise; parts.push(`소음 +${data.noise}`) }
   const feedback = parts.join(' · ')
   emit(state, events, 'skill', { card, feedback, sound: fx.sound || null }, feedback ? `${data.name}${card.upgraded ? '+' : ''} · ${feedback}.` : null)
@@ -923,6 +927,10 @@ export function evade(state, enemy, events = []) {
 
 /** 적 공격 한 타. `{ damage, blocked }`. */
 export function enemyHit(state, enemy, intent, hitIndex = 0, events = []) {
+  if (state.smoke > 0 && random() < SMOKE_EVADE) {
+    emit(state, events, 'smoke-evade', { enemy, hit: hitIndex }, `연막 · ${enemy.name}의 공격이 빗나감.`)
+    return { damage: 0, blocked: 0, evaded: true }
+  }
   const blocked = Math.min(state.block, intent.damage)
   const damage = intent.damage - blocked
   state.block -= blocked
@@ -954,6 +962,7 @@ export function enemyAfterAttack(state, enemy, intent, penetrated, events = []) 
 
 export function endEnemyPhase(state) {
   state.noise = Math.max(0, state.noise - 1)
+  state.smoke = Math.max(0, (state.smoke || 0) - 1)
 }
 
 // ── 준비 단계 ──────────────────────────────────────────────────

@@ -95,6 +95,7 @@ export function createBattleView(canvas, hooks) {
   let glow, softGlow, dot, redVignette
   let flashRect, dangerVignette
   const motes = []
+  const smokeHaze = []
 
   const hero = makeFigure()
   figureLayer.addChild(hero.root)
@@ -273,6 +274,16 @@ export function createBattleView(canvas, hooks) {
       fig.light.alpha = flicker
       fig.light.position.set(p.x, p.y - 50 * p.scale)
       fig.light.scale.set(p.scale * 1.4)
+    }
+
+    // Smoke haze around the survivor while the smoke buff lasts.
+    const smokeOn = (state.smoke || 0) > 0
+    for (const [i, puff] of smokeHaze.entries()) {
+      puff.visible = smokeOn || puff.alpha > 0.01
+      const target = smokeOn ? 0.32 + Math.sin(time * 0.9 + i * 1.7) * 0.08 : 0
+      puff.alpha += (target - puff.alpha) * Math.min(1, dt * 3)
+      puff.position.set(g.heroX + Math.sin(time * 0.35 + i * 2.1) * 34 * g.scale + (i - 2) * 26 * g.scale, g.ground - (40 + (i % 3) * 45) * g.scale)
+      puff.scale.set((1.1 + (i % 2) * 0.4) * g.scale)
     }
 
     // Limb picker rings.
@@ -504,6 +515,15 @@ export function createBattleView(canvas, hooks) {
         world.addChildAt(m, world.getChildIndex(ringLayer))
       }
 
+      for (let i = 0; i < 5; i++) {
+        const puff = new Sprite(softGlow)
+        puff.anchor.set(0.5)
+        puff.tint = 0x9a9ca4
+        puff.alpha = 0
+        smokeHaze.push(puff)
+        world.addChildAt(puff, world.getChildIndex(ringLayer))
+      }
+
       app.stage.addChild(world, overlay)
       app.ticker.add(update)
       ready = true
@@ -529,6 +549,13 @@ export function createBattleView(canvas, hooks) {
       size = { w, h, dpr }
       if (!ready) return
       app.renderer.resize(w, h, dpr)
+      // Browser zoom keeps the physical pixel count (1280 CSS px × 1.5 = 1920), and Pixi skips
+      // its resize event when that count is unchanged, leaving app.screen at the old CSS size.
+      // Nudge the size by one pixel and back so Pixi takes its real resize path.
+      if (Math.abs(app.screen.width - w) > 0.5 || Math.abs(app.screen.height - h) > 0.5) {
+        app.renderer.resize(w + 1, h, dpr)
+        app.renderer.resize(w, h, dpr)
+      }
       flashRect.width = w
       flashRect.height = h
       dangerVignette.width = w
@@ -688,6 +715,12 @@ export function createBattleView(canvas, hooks) {
       summonedIds.add(enemy.id)
     },
 
+    smokeEvade() {
+      const g = hooks.geometry()
+      emitSparks(g.heroX + 20 * g.scale, g.ground - 110 * g.scale, { count: 10, color: 0xb8bac2, speed: [20, 70], life: [0.5, 0.9], gravity: -40, size: [3, 6], stretch: 0.005 })
+      if (motionOn()) gsap.fromTo(hero.body, { x: -14 * g.scale }, { x: 0, duration: 0.3, ease: 'power2.out' })
+    },
+
     limbBroken(point) {
       emitSparks(point.x, point.y, { count: 18, color: 0xffd0a0, speed: [150, 380], life: [0.2, 0.45] })
       light(point.x, point.y, { color: 0xffb080, scale: 0.8, alpha: 0.45, duration: 0.3 })
@@ -792,9 +825,10 @@ export function createBattleView(canvas, hooks) {
         const gd = fxSprite(EFFECT_SPRITES.guard, { x: g.heroX + 30 * s, y: g.ground - h - 2 * s, w, h, anchor: 0 })
         if (!gd) return
         if (motion) {
-          gd.x += 18 * s
-          gsap.to(gd, { x: g.heroX + 30 * s, duration: 0.12, ease: 'back.out(2)' })
-          light(g.heroX + 80 * s, g.ground - 90 * s, { color: 0xd8c8a0, scale: 0.8 * s, alpha: 0.25, duration: 0.4 })
+          gd.y += 18 * s
+          gd.rotation = -0.025
+          gsap.to(gd, { y: g.ground - h - 2 * s, rotation: 0, duration: 0.14, ease: 'back.out(1.7)' })
+          emitSparks(g.heroX + 80 * s, g.ground - 10 * s, { count: 9, color: 0xa68b68, speed: [28, 85], life: [0.24, 0.48], gravity: 180, dir: -Math.PI / 2, spread: 2.3, size: [1.2, 2.4], stretch: 0 })
         }
         oneShot(gd, { alpha: 0, duration: 0.25, delay: 0.4, ease: 'none' })
         return

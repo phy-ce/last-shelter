@@ -56,7 +56,7 @@ if (scenario === 'discard' || scenario === 'resume') {
   console.log('save present after first load:', await evaluate(`Boolean(localStorage.getItem('last-shelter:run'))`))
   await goto()
   console.log('modal title:', await evaluate(`document.querySelector('#modal h2')?.textContent`))
-  const label = scenario === 'discard' ? '새로 시작' : '이어하기'
+  const label = scenario === 'discard' ? '새 게임' : '계속하기'
   console.log('clicked:', await evaluate(`(() => { const b = [...document.querySelectorAll('#modal button')].find(b => b.textContent.includes('${label}')); if (!b) return 'NOT FOUND'; b.click(); return b.textContent })()`))
   await sleep(800)
   console.log('class screen:', await pickClass())
