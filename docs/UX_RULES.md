@@ -1,38 +1,57 @@
-# UX rules
+# UX 규칙
 
-- Irreversible or scarce-resource actions never execute on the first card click.
-- Irreversible choices do not have number-key shortcuts. Rewards, route commitment, treatment, and upgrade confirmation require an explicit pointer action or confirmation control.
-- Upgrade screens use: select a card, inspect the before/after result, then press a separate confirmation button.
-- Upgrade screens separate equipment and independent skills, keep before/after values visible without hover, and show the committed target in a fixed confirmation panel.
-- Escape always returns to the immediately preceding preparation screen when that screen opened the current view.
-- Combat information should use image icons and numbers before explanatory text; emoji are not production UI assets.
-- The battlefield is the primary screen. Hand cards and combat HUD float over it rather than living in separate boxed rows.
-- Canonical visual QA is always performed at 1920×1080 and 100% browser zoom. Smaller viewports are secondary responsive checks, never the acceptance viewport.
-- Default surfaces retain only information needed for the current decision. Rule explanations, sources, flavour, and edge cases live in the codex or hover/focus disclosure.
-- Reuse shared SVG icons for recurring concepts. Do not duplicate the same meaning as a full label when icon plus value is sufficient.
+- 되돌릴 수 없거나 한정된 자원을 소비하는 행동은 카드를 처음 클릭했을 때 바로 실행하지 않는다.
+- 되돌릴 수 없는 선택에는 숫자 키 단축키를 배정하지 않는다. 보상 선택, 경로 확정, 치료, 강화 확정은 명시적인 마우스 조작이나 확정 버튼을 거친다.
+- 강화 화면은 카드 선택 → 강화 전후 결과 확인 → 별도 버튼으로 확정하는 순서로 구성한다.
+- 강화 화면에서 장비와 독립 스킬을 구분한다. 강화 전후 수치는 호버 없이도 보이며, 확정할 대상은 고정된 확인 패널에 표시한다.
+- 준비 화면에서 다른 화면을 열었다면 Esc를 눌렀을 때 바로 이전 준비 화면으로 돌아간다.
+- 전투 정보는 설명문보다 이미지 아이콘과 숫자를 우선한다. 실제 게임 UI 에셋으로 이모지를 사용하지 않는다.
+- 전투 장면이 주 화면이다. 손패와 전투 HUD는 장면 위에 배치하며, 별도의 박스 행으로 분리하지 않는다.
+- 기준 화면 검수는 항상 1920×1080, 브라우저 배율 100%에서 수행한다. 작은 화면은 추가 반응형 검수용이며, 완료 판단의 기준으로 삼지 않는다.
+- 기본 화면에는 현재 판단에 필요한 정보만 남긴다. 규칙 설명, 출처, 플레이버, 예외 조건은 도감이나 호버·키보드 포커스로 펼치는 상세 정보에 둔다.
+- 반복되는 개념에는 공용 SVG 아이콘을 재사용한다. 아이콘과 수치로 충분한 의미를 긴 글자로 중복 표시하지 않는다.
 
-## Presentation hierarchy
+## 글자와 조작 표현
 
-- Visual language: near-black negative space, thin worn-metal rectangular frames, bone-grey text, restrained oxblood selection, desaturated art, and serif display type. Avoid glossy modern cards, large rounded panels, pill controls, and bright gold fills.
-- Reference imagery informs presentation only. Do not copy its party systems, mind gauges, resistances, formation mechanics, or menu structure into game rules.
+- 연출상 넣은 텍스트를 제외하면, UI 상의 텍스트는 최소화한다.
+- 글자는 카드·적의 이름, 실제 효과 설명, 필요한 선택지와 확정 행동에만 쓴다. 공간을 채우기 위한 문구를 넣지 않는다.
+- `클릭하여 선택` 같은 자명한 조작 안내, 장소 이름 반복, 분위기용 메뉴 제목은 기본 화면에서 제외한다.
+- 행동력 비용은 공용 번개 아이콘과 숫자로 표시한다. 카드 제목이나 모서리에 `AP`를 붙이지 않는다.
+- 적의 행동 예고 수치는 아이콘 오른쪽 아래에 작은 첨자처럼 붙인다. 아이콘과 숫자를 별도 칸에 벌려 놓지 않는다. 여러 행동은 이 묶음끼리 간격을 둔다.
+- 규칙 설명·출처·플레이버는 상세 화면이나 툴팁에 둔다. 다만 카드 사용에 필요한 조건·비용·위험은 읽을 수 있어야 한다.
 
-- Resting hand cards keep a compact physical-card proportion and stay below the battlefield. Hover and keyboard focus only lift them slightly; they never grow into the enemy targeting area. Number keys select a card, and right-click opens its complete effect and source in a dedicated detail view.
-- Hand cards use one native Pixi card template across the hand, deck, rewards and details. Resting cards stay below the battlefield; mouse hover or keyboard selection raises only the active card to reveal the effect below its art. Mouse selection alone does not pin a card above the battlefield. Enemy HP/limb displays show current values only, without predicted attack results, remaining HP, kills or destruction.
-- Combat effect numbers come from content definitions and rule calculations. Conditional coin effects, delayed effects, ammo costs, noise, and exhaust retain distinct visible markers; they are not removed merely to shorten a card.
-- Rarity names remain in accessible labels. Detailed card summaries remain available to assistive technology.
-- Flavour text is on the card back, behind the 뒷면 chip, so the face carries only what is needed to play.
-- The bag is a grid the player drags items around: hand slots on the left, bag in the middle, discard and the selected item on the right. Legal and illegal drops are marked while dragging, and R rotates.
-- Enemy intentions use distinct vector symbols. Hidden intentions never reveal the actual action or coin-danger styling.
-- Body status uses an anatomical diagram plus named limb states. Injuries also use dashed outlines and explicit text, not color alone.
-- Class traits remain visible before choosing a survivor. Starting skills disclose each card's cost and actual rule summary—not only its name—on hover or keyboard focus. Backstory and starting loadout use the same progressive disclosure.
-- Character cards select on the first click and start the run only through a separate confirmation control. Clicking a portrait never starts immediately.
-- Every between-battle action ends at mandatory preparation. Healing, upgrading, taking a skill, and armory results all flow through equipment and supply management before the next combat.
-- During between-battle preparation, every owned consumable whose card defines persistent HP recovery or infection reduction can be used directly from the bag. This currently includes the medkit, antibiotics, painkillers, and tourniquet. The button and applied values come from the card's content definition, never duplicated UI constants.
-- Preparation use consumes exactly one use and removes the item and its cards at zero uses. Combat-only portions such as block, energy, card draw, strength, noise control, and one-turn injury suppression do not carry into preparation; the button states only the persistent effect that will actually apply.
-- A preparation recovery button remains visible but disabled when there is nothing to heal/cure or the survivor cannot use consumables, and it explains the reason. Incoming loot cannot be consumed before it is placed in the bag, and the combat inventory remains read-only.
-- Preparation inventory tiles show consumable uses as current/maximum. The selected-item panel shows identity, provided cards, remaining uses, and the exact HP/infection change that would occur now before the use button.
-- Coin-toss audio plays once, on the HEADS/TAILS choice click. Landing and result rendering do not replay the coin sample.
-- The combat inventory is always reachable from the header or with `I`. It is read-only during combat so checking current equipment and supplies never changes combat state.
-- Gameplay UI is drawn and hit-tested by Pixi in `src/ui/engine-ui.js`. `@pixi/ui` supplies buttons, scroll boxes, sliders and checkboxes; `@pixi/layout` lays out the native toolbar. The legacy semantic DOM remains an accessibility and controller-action mirror, not a visual layout or HTML-to-texture source. CSS only hosts the canvas and hides that mirror after initialization.
-- Card, panel and button borders use Kenney Fantasy UI Borders (CC0), with native 9-slice scaling so corners retain their size. See `public/assets/ui/kenney/LICENSE.txt`. Shared SVG symbols remain the icon source for navigation, cards, status and enemy intentions.
-- Modal titles and primary footer actions remain fixed while the native content area scrolls. Enemy names sit immediately below their current HP bar.
+## 화면 구성과 표현 기준
+
+- 시각 표현은 게임의 분위기에 어울리고, 필요한 정보와 조작 상태를 쉽게 구분할 수 있어야 한다. 색상, 글꼴, 테두리, 모서리 모양, 재질은 특정 방식으로 고정하지 않고 화면에 맞게 선택한다.
+- 기존 디자인보다 더 나은 표현이 있으면 바꿀 수 있다. 보기 좋은지, 읽기 쉬운지, 조작하기 편한지를 실제 화면에서 확인해 판단한다.
+- 참고 자료와 에셋은 필요한 부분을 골라 활용한다. UI 표현을 개선하는 과정에서 게임 규칙까지 임의로 바꾸지 않는다.
+
+- 평소 손패는 작고 실제 카드에 가까운 비율을 유지하며 전투 장면 아래쪽에 둔다. 호버·키보드 포커스에서는 필요한 만큼만 올리고, 적을 겨냥하는 영역까지 커지지 않는다. 숫자 키로 카드를 선택하고, 우클릭하면 전체 효과와 출처를 별도 상세 화면에서 보여 준다.
+- 손패·덱·보상·상세 화면의 카드는 공통된 생김새와 정보 표현을 유지하되, 화면의 용도에 맞게 배치한다. 평소 카드는 전투 장면 아래쪽에 두고, 호버·키보드 선택한 카드만 올려 그림 아래 효과를 보여 준다. 마우스로 선택했다는 이유만으로 카드를 올라온 위치에 고정하지 않는다. 적의 체력·사지 정보에는 현재 수치만 표시하며, 공격 후 남을 체력·처치·파괴 등 예상 결과는 표시하지 않는다.
+- 전투 효과 수치는 콘텐츠 정의와 규칙 계산에서 가져온다. 동전 조건부 효과, 지연 효과, 탄약 비용, 소음, 소멸은 각각 구별되는 표시를 유지한다. 카드를 짧게 만들기 위해 필요한 표시를 없애지 않는다.
+- 희귀도 이름은 접근성 레이블에 남긴다. 보조 기술에서도 카드의 상세 효과를 읽을 수 있어야 한다.
+- 플레이버는 카드 뒷면에 둔다. 덱·도감에서는 카드 자체를 클릭하면 앞뒤가 바뀐다. 별도 `뒷면` 버튼은 넣지 않으며, 키보드에서는 Enter/Space로 뒤집는다. 손패 클릭은 카드 선택 동작을 유지한다.
+- 가방은 아이템을 드래그해 배치하는 격자다. 손 슬롯, 가방, 버리기 영역, 선택한 아이템 정보를 쉽게 구분하고 함께 확인할 수 있게 구성한다. 드래그 중에는 배치 가능·불가 위치를 표시하며, R 키로 회전한다.
+- 적의 행동 예고에는 서로 구별되는 벡터 아이콘을 사용한다. 행동 예고가 숨겨졌을 때는 실제 행동이나 동전 위험 표시를 노출하지 않는다.
+- 신체 상태는 어느 부위가 정상인지, 부상인지 쉽게 알아볼 수 있게 표시한다. 색에만 의존하지 않고 아이콘·모양·필요한 글자를 함께 사용한다. 도식과 상세 정보의 배치는 이해하기 쉬운 방식으로 선택한다.
+- 생존자를 선택하기 전에 직업 특성을 보여 준다. 시작 스킬은 호버·키보드 포커스에서 이름뿐 아니라 카드 비용과 실제 규칙 요약까지 펼쳐 보여 준다. 배경 이야기와 시작 장비도 같은 방식으로 필요한 때에 펼쳐 보여 준다.
+- 캐릭터 카드는 첫 클릭에서 선택만 한다. 게임 시작은 별도 확정 버튼을 거치며, 초상화를 클릭했다고 즉시 시작하지 않는다.
+- 전투 사이의 모든 행동은 필수 준비 단계로 이어진다. 치료, 강화, 스킬 획득, 무기고 결과를 받은 뒤에는 장비·보급품 관리를 거쳐 다음 전투로 진행한다.
+- 전투 사이 준비 단계에서는 카드에 지속적인 체력 회복이나 감염 감소가 정의된 보유 소모품을 가방에서 직접 사용할 수 있다. 현재 대상은 구급상자, 항생제, 진통제, 지혈대다. 버튼과 적용 수치는 카드의 콘텐츠 정의에서 가져오며, UI에 별도 상수로 중복 정의하지 않는다.
+- 준비 단계에서 사용하면 사용 횟수를 정확히 1회 소비하고, 0회가 되면 아이템과 해당 카드를 제거한다. 방어도, 행동력, 카드 뽑기, 공격력, 소음 조절, 한 턴 부상 무시 등 전투 전용 효과는 준비 단계에 적용하지 않는다. 버튼에는 실제로 적용될 지속 효과만 표시한다.
+- 회복할 체력·감염이 없거나 생존자가 소모품을 사용할 수 없으면 회복 버튼은 보이되 비활성화하고 이유를 설명한다. 새로 얻은 아이템은 가방에 배치하기 전까지 사용할 수 없으며, 전투 중 인벤토리는 조회만 가능하다.
+- 준비 단계의 인벤토리 타일에는 소모품 사용 횟수를 현재/최대 형식으로 표시한다. 선택한 아이템 패널에는 아이템 정보, 제공 카드, 남은 사용 횟수, 지금 사용할 때의 정확한 체력·감염 변화를 사용 버튼 앞에 보여 준다.
+- 동전 소리는 앞면·뒷면 선택을 클릭할 때 한 번만 재생한다. 착지와 결과 표시에서는 같은 소리를 다시 재생하지 않는다.
+- 전투 중 인벤토리는 항상 상단 메뉴나 I 키로 열 수 있다. 전투 중에는 조회만 가능하므로 장비·보급품을 확인해도 전투 상태가 바뀌지 않는다.
+- UI는 게임 엔진으로 그리며, 엔진의 공용 컴포넌트·템플릿과 적합한 에셋을 적극적으로 활용한다. 특정 라이브러리나 에셋을 영구적인 디자인 규칙으로 고정하지 않는다. 현재 구현과 사용 에셋은 [ENGINE_UI.md](ENGINE_UI.md)에 기록한다.
+- 내용이 스크롤되어도 현재 화면과 주요 행동을 쉽게 확인하고 조작할 수 있어야 한다. 적 이름은 현재 체력바 바로 아래에 둔다.
+
+## 손패 — 부채꼴 (구현 완료)
+
+- 손패는 화면 아래 중앙에서 완만한 부채꼴로 펼친다. 중앙 카드는 거의 수직이고 조금 높으며, 양끝으로 갈수록 바깥쪽으로 기울고 낮아진다. 카드 아래쪽이 화면 밖에 걸려 손에 들고 있는 느낌을 만든다.
+- 카드는 일부 겹치되 서로 다른 카드를 고를 수 있는 면적을 남긴다. 카드 수가 늘면 먼저 간격을 줄이고, 회전은 과장하지 않는다. 카드가 없거나 한 장일 때는 회전하지 않는다.
+- 호버·키보드 선택 중인 카드 하나만 앞으로 가져오고, 회전을 풀어 곧게 세운 뒤 6%만 확대해 그림 아래 효과 설명까지 보여 준다. 선택하지 않은 카드는 제자리에 유지한다.
+- 마우스가 벗어나면 선택 테두리는 유지할 수 있지만 카드는 원래 부채꼴 위치로 내려간다. 숫자 키로 선택한 카드는 취소하거나 다른 카드를 선택할 때까지 읽을 수 있는 위치를 유지한다.
+- 펼친 카드가 적의 체력바·행동 예고·몸통·사지 선택 지점을 가리지 않게 배치한다. 손패 전체를 커다란 패널로 감싸지 않는다.
+- 겹친 카드의 입력 영역은 실제 보이는 면과 쌓임 순서를 따른다. 카드가 올라오며 포인터 아래 다른 카드가 잡히거나, 두 카드 사이에서 호버가 반복 전환되지 않게 한다.
+- 부채꼴은 전투 손패에만 적용한다. 덱·도감·보상에서는 비교와 읽기에 맞는 정렬을 유지한다.

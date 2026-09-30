@@ -1,6 +1,6 @@
 import '@pixi/layout'
 import { LayoutContainer } from '@pixi/layout/components'
-import { Assets, Container, Graphics, NineSliceSprite, Rectangle, Sprite, Text, Texture } from 'pixi.js'
+import { Assets, Container, Graphics, Rectangle, Sprite, Text, Texture } from 'pixi.js'
 import { Button, CheckBox, ScrollBox, Slider } from '@pixi/ui'
 import { gsap } from 'gsap'
 import { motionOn } from '../core/settings.js'
@@ -11,13 +11,19 @@ const font = 'Malgun Gothic, sans-serif'
 const rarity = { common: 0x8c867c, uncommon: 0x859b80, rare: 0x8b9dc4, epic: 0xba92c0, legendary: 0xdfbd83 }
 const has = (node, names) => names.split(' ').some(name => node?.classList?.contains(name))
 const clean = node => [...node.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join(' ').trim()
-let skins
 const box = (w, h, fill = C.panel, stroke = C.line, radius = 6) => {
   const view = new Container()
   const corner = Math.min(radius, 5)
-  view.addChild(new Graphics().poly([corner, 0, w - corner, 0, w, corner, w, h - corner, w - corner, h, corner, h, 0, h - corner, 0, corner]).fill(fill))
-  const frame = new NineSliceSprite({ texture: h > 220 && w < 260 ? skins.card : h <= 70 ? skins.button : skins.panel, leftWidth: 12, rightWidth: 12, topHeight: 12, bottomHeight: 12, width: w, height: h })
-  frame.tint = stroke; frame.alpha = .85; view.addChild(frame)
+  const shape = [corner, 0, w - corner, 0, w, corner, w, h - corner, w - corner, h, corner, h, 0, h - corner, 0, corner]
+  view.addChild(
+    new Graphics().poly(shape).fill(fill).stroke({ color: stroke, alpha: .9, width: 1.5 }),
+    new Graphics().poly([corner + 4, 5, w - corner - 4, 5, w - 5, corner + 4, w - 5, h - corner - 4, w - corner - 4, h - 5, corner + 4, h - 5, 5, h - corner - 4, 5, corner + 4])
+      .stroke({ color: stroke, alpha: .25, width: 1 }),
+    new Graphics()
+      .moveTo(10, 0).lineTo(Math.min(w - 10, 64), 0)
+      .moveTo(w - Math.min(w - 10, 64), h).lineTo(w - 10, h)
+      .stroke({ color: C.gold, alpha: .2, width: 2 })
+  )
   return view
 }
 const label = (value, w, size = 14, color = C.paper, bold = false) => new Text({ text: String(value || ''), style: { fontFamily: font, fontSize: size, fill: color, fontWeight: bold ? 'bold' : 'normal', wordWrap: true, wordWrapWidth: Math.max(20, w), breakWords: true, lineHeight: size * 1.5 } })
@@ -26,10 +32,9 @@ const label = (value, w, size = 14, color = C.paper, bold = false) => new Text({
  * callbacks only: no DOM bounds, CSS layout, screenshots or HTML textures are used.
  * It remains an accessibility/automation mirror while the controller is migrated. */
 export async function createEngineUI(app, hooks) {
-  const [cardSkin, panelSkin, buttonSkin, dividerSkin] = await Promise.all(['card-frame', 'panel-frame', 'button-frame', 'divider'].map(name => Assets.load(`/assets/ui/kenney/${name}.png`)))
-  skins = { card: cardSkin, panel: panelSkin, button: buttonSkin, divider: dividerSkin }
   const root = new Container({ label: 'engine-ui' })
   const hud = new Container(), hand = new Container(), dialogs = new Container(), tips = new Container()
+  hand.sortableChildren = true
   const dropHint = new Graphics()
   root.addChild(hud, hand, dialogs, tips, dropHint)
   app.stage.addChild(root)
@@ -64,6 +69,9 @@ export async function createEngineUI(app, hooks) {
   function interactive(view, source, w, h, action = () => source.click()) {
     view.hitArea = new Rectangle(0, 0, w, h)
     const button = new Button(view)
+    // Keep this display object alive through pointerup/pointertap. Redrawing on
+    // pointerdown destroys @pixi/ui's Button before it can emit onPress.
+    view.on('pointerdown', () => { keyboardSelection = false })
     button.enabled = !source.disabled
     button.onPress.connect((_, event) => { event?.stopPropagation(); source.focus?.({ preventScroll: true }); action() })
     button.onHover.connect(() => {
@@ -133,7 +141,10 @@ export async function createEngineUI(app, hooks) {
     }
     const detail = source.querySelector('.card-detail, .card-rules, .card-summary')?.textContent || ''
     const copy = label(detail, w - 24, 13); copy.position.set(12, y + 6); view.addChild(copy)
-    const divider = new Sprite(skins.divider); divider.tint = rarity[tone]; divider.width = w - 24; divider.height = 3; divider.position.set(12, y + 2); view.addChild(divider)
+    const divider = new Graphics()
+      .moveTo(0, 0).lineTo(w - 24, 0).stroke({ color: rarity[tone], alpha: .62, width: 1 })
+      .moveTo(0, 2).lineTo(Math.min(54, w - 24), 2).stroke({ color: rarity[tone], alpha: .28, width: 1 })
+    divider.position.set(12, y + 2); view.addChild(divider)
     const cost = source.querySelector('.cost')
     if (cost || titleCost) { const token = iconCount(uiIcon('energy'), cost?.textContent || titleCost[1]); token.view.position.set(w - 48, 10); view.addChild(token.view) }
     const uses = source.querySelector('.uses-badge')
@@ -378,15 +389,100 @@ export async function createEngineUI(app, hooks) {
     const end = textButton(semantic('endTurn'), 160, 48); end.view.position.set(w - 184, h - 178); hud.addChild(end.view)
     place(hud, semantic('piles'), w - 300, h - 168, 100)
     place(hud, semantic('injuryBanner'), w / 2 - 250, 160, 500)
-    const cards = [...semantic('hand').querySelectorAll('.card')], cw = 184, gap = Math.min(194, (w - 430) / Math.max(1, cards.length)), total = (cards.length - 1) * gap + cw
-    const restingY = h - 158, raisedY = h - 322
-    hand.addChild(new Graphics().roundRect((w - total) / 2 - 18, restingY - 10, total + 36, 302, 12).fill({ color: 0x100e13, alpha: .66 }))
+    const cards = [...semantic('hand').querySelectorAll('.card')], cw = 184
+    const gap = Math.min(142, Math.max(30, (w - 520 - cw) / Math.max(1, cards.length - 1)))
+    const middle = (cards.length - 1) / 2
     cards.forEach((source, index) => {
+      const spread = middle > 0 ? (index - middle) / middle : 0
+      const rest = { x: w / 2 + (index - middle) * gap, y: h + 112 + 28 * spread * spread, rotation: spread * Math.min(.14, middle * .045) }
       const keyboardActive = keyboardSelection && (has(source, 'selected') || source === document.activeElement)
-      const native = card(source, cw, 288); native.view.position.set((w - total) / 2 + index * gap, keyboardActive || hoveredHandIndex === index ? raisedY : restingY); hand.addChild(native.view)
-      native.view.on('pointerenter', () => { hoveredHandIndex = index; gsap.to(native.view, { y: raisedY, duration: motionOn() ? .18 : 0, overwrite: true }) })
-      native.view.on('pointerleave', () => { hoveredHandIndex = null; gsap.to(native.view, { y: keyboardSelection && (has(source, 'selected') || source === document.activeElement) ? raisedY : restingY, duration: motionOn() ? .18 : 0, overwrite: true }) })
+      const active = hoveredHandIndex === null ? keyboardActive : hoveredHandIndex === index
+      const native = card(source, cw, 288)
+      native.view.pivot.set(cw / 2, 288)
+      native.view.position.set(rest.x, active ? h - 24 : rest.y)
+      native.view.rotation = active ? 0 : rest.rotation
+      native.view.scale.set(active ? 1.06 : 1)
+      native.view.zIndex = active ? cards.length + 1 : index
+      const control = controls[controls.length - 1]
+      control.handRest = rest; control.handIndex = index
+      hand.addChild(native.view)
     })
+  }
+
+  function drawCoinDialog(w, h) {
+    const source = semantic('modal')
+    const mw = Math.min(580, w - 48), mh = Math.min(640, h - 56)
+    const shell = new Container()
+    shell.position.set((w - mw) / 2, (h - mh) / 2)
+    shell.addChild(box(mw, mh, 0x100d12, 0x6d574a, 8))
+
+    const title = label(source.querySelector('.coin-title')?.textContent, mw - 64, 25, 0xf0e3d2, true)
+    title.position.set((mw - title.width) / 2, 24)
+    shell.addChild(title)
+    shell.addChild(new Graphics()
+      .moveTo(40, 68).lineTo(mw / 2 - 28, 68)
+      .moveTo(mw / 2 + 28, 68).lineTo(mw - 40, 68)
+      .stroke({ color: 0x806650, alpha: .58, width: 1 })
+      .circle(mw / 2, 68, 3).fill({ color: C.gold, alpha: .55 }))
+
+    const coinNode = source.querySelector('.coin')
+    const stage = new Container()
+    stage.position.set(0, 78)
+    stage.addChild(
+      new Graphics().ellipse(mw / 2, 132, 196, 112).fill({ color: 0x6e5332, alpha: .035 }),
+      new Graphics().ellipse(mw / 2, 132, 148, 84).stroke({ color: 0x9a7548, alpha: .09, width: 1 }),
+      new Graphics().ellipse(mw / 2, 226, 72, 12).fill({ color: 0x000000, alpha: .62 })
+    )
+    const image = coinNode?.querySelector(has(coinNode, 'show-tails') ? 'img.coin-tails' : 'img.coin-heads')
+    coinView = art(image, 180, 180)
+    coinView.position.set((mw - 180) / 2, 34)
+    stage.addChild(coinView)
+    shell.addChild(stage)
+
+    const resultSource = source.querySelector('.coin-result')
+    const resultText = resultSource?.textContent.trim() || ''
+    const resultColor = has(resultSource, 'coin-success') ? 0xe8d397 : has(resultSource, 'coin-failure') ? 0xdf8981 : C.gold
+    const result = label(resultText, mw - 80, 24, resultColor, true)
+    result.position.set((mw - result.width) / 2, 320)
+    shell.addChild(result)
+
+    const stakes = [...source.querySelectorAll('.coin-stake-line')]
+    let stakeY = 372
+    for (const [index, line] of stakes.entries()) {
+      const name = line.querySelector('strong')?.textContent || ''
+      const value = line.querySelector('span')?.textContent || ''
+      const tone = index ? 0xdf8981 : 0xe8d397
+      const nameText = label(name, 72, 14, tone, true)
+      const valueText = label(value, mw - 168, 15, C.paper)
+      nameText.position.set(72, stakeY)
+      valueText.position.set(146, stakeY - 1)
+      shell.addChild(nameText, valueText)
+      stakeY += Math.max(32, valueText.height + 8)
+    }
+    if (!stakes.length) {
+      const outcome = label(source.querySelector('.coin-stakes')?.textContent, mw - 144, 16, C.paper)
+      outcome.position.set(72, stakeY)
+      shell.addChild(outcome)
+      stakeY += outcome.height + 10
+    }
+
+    const controls = [...source.querySelectorAll('.coin-details .row > button')]
+    const buttonW = controls.length > 1 ? 156 : 210
+    const gap = 16, total = controls.length * buttonW + Math.max(0, controls.length - 1) * gap
+    let buttonX = (mw - total) / 2
+    const buttonY = Math.min(mh - 70, Math.max(500, stakeY + 18))
+    for (const source of controls) {
+      const control = textButton(source, buttonW, 48)
+      const copy = control.view.children.find(child => child instanceof Text)
+      if (copy) copy.x = (buttonW - copy.width) / 2
+      control.view.position.set(buttonX, buttonY)
+      shell.addChild(control.view)
+      buttonX += buttonW + gap
+    }
+
+    dialogs.addChild(shell)
+    lastModal = hooks.getModal()
+    scrollbox = null
   }
 
   function drawDialog(w, h) {
@@ -395,6 +491,7 @@ export async function createEngineUI(app, hooks) {
     menuTip = null
     dialogs.eventMode = 'static'; dialogs.hitArea = new Rectangle(0, 0, w, h)
     dialogs.addChild(new Graphics().rect(0, 0, w, h).fill({ color: 0x08060a, alpha: .85 }))
+    if (modal.type === 'coin') { drawCoinDialog(w, h); return }
     const mw = Math.min(w - 80, modal.type === 'options' && modal.subtitle !== 'CHOOSE SURVIVOR' ? 900 : modal.type === 'settings' ? 800 : 1280)
     const source = semantic('modal'), shell = new Container(), body = new Container()
     const footerSource = source.querySelector(':scope > .modal-footer')
@@ -472,13 +569,25 @@ export async function createEngineUI(app, hooks) {
   app.stage.on('globalpointermove', event => {
     pointer = event.global.clone()
     const handControls = controls.filter(control => !control.view.destroyed && control.source.closest('#hand'))
-    const hovered = handControls.findIndex(control => inside(control, pointer))
-    const nextHovered = hovered < 0 ? null : hovered
+    // Keep the lifted card while the pointer is on it or its original footprint.
+    // Resolve overlaps front-to-back, matching Pixi's native pointer dispatch.
+    const current = handControls.find(control => control.handIndex === hoveredHandIndex)
+    const onRest = control => {
+      const rest = control.handRest, dx = pointer.x - rest.x, dy = pointer.y - rest.y
+      const x = dx * Math.cos(rest.rotation) + dy * Math.sin(rest.rotation) + control.w / 2
+      const y = -dx * Math.sin(rest.rotation) + dy * Math.cos(rest.rotation) + 288
+      return x >= 0 && x <= control.w && y >= 0 && y <= control.h
+    }
+    const hovered = hooks.getModal() ? null : current && (inside(current, pointer) || onRest(current)) ? current
+      : [...handControls].sort((a, b) => b.view.zIndex - a.view.zIndex).find(control => inside(control, pointer))
+    const nextHovered = hovered?.handIndex ?? null
     if (hoveredHandIndex !== nextHovered) {
       hoveredHandIndex = nextHovered
       handControls.forEach((control, index) => {
-        const active = index === nextHovered || keyboardSelection && (has(control.source, 'selected') || control.source === document.activeElement)
-        gsap.to(control.view, { y: app.screen.height - (active ? 322 : 158), duration: motionOn() ? .18 : 0, overwrite: true })
+        const active = nextHovered === null ? keyboardSelection && (has(control.source, 'selected') || control.source === document.activeElement) : index === nextHovered
+        control.view.zIndex = active ? handControls.length + 1 : index
+        gsap.to(control.view, { y: active ? app.screen.height - 24 : control.handRest.y, rotation: active ? 0 : control.handRest.rotation, duration: motionOn() ? .18 : 0, overwrite: true })
+        gsap.to(control.view.scale, { x: active ? 1.06 : 1, y: active ? 1.06 : 1, duration: motionOn() ? .18 : 0, overwrite: true })
       })
     }
     if (!drag) return
@@ -513,7 +622,7 @@ export async function createEngineUI(app, hooks) {
   document.addEventListener('change', () => { dirty = true })
   app.stage.on('pointerupoutside', cancelDrag)
   document.addEventListener('keydown', event => {
-    if (/^(Digit[1-9]|Numpad[1-9]|Tab|Enter|Space)$/.test(event.code)) { keyboardSelection = true; dirty = true }
+    if (/^(Digit[0-9]|Numpad[0-9]|Tab|Enter|Space)$/.test(event.code)) { keyboardSelection = true; hoveredHandIndex = null; dirty = true }
     if (drag && event.code === 'KeyR') { event.preventDefault(); event.stopImmediatePropagation(); drag.rot = drag.rot ? 0 : 1; const w = drag.view.hitArea.width; drag.view.hitArea.width = drag.view.hitArea.height; drag.view.hitArea.height = w; drag.view.rotation += Math.PI / 2 }
     if (drag && event.code === 'Escape') { event.stopImmediatePropagation(); cancelDrag() }
     if (event.code === 'Tab') {
@@ -530,7 +639,7 @@ export async function createEngineUI(app, hooks) {
     root,
     refresh() { dirty = true },
     contains(x, y) { return Boolean(hooks.getModal()) || controls.some(control => !control.view.destroyed && inside(control, { x, y })) },
-    snapshot() { return controls.filter(control => !control.view.destroyed).map(control => { const p = control.view.getGlobalPosition(); return { text: control.source.getAttribute('aria-label') || control.source.textContent.trim(), id: control.source.id, x: p.x + control.w / 2, y: p.y + control.h / 2, disabled: Boolean(control.source.disabled) } }) },
+    snapshot() { return controls.filter(control => !control.view.destroyed).map(control => { const p = control.view.toGlobal({ x: control.w / 2, y: control.h / 2 }); return { text: control.source.getAttribute('aria-label') || control.source.textContent.trim(), id: control.source.id, x: p.x, y: p.y, disabled: Boolean(control.source.disabled) } }) },
     async tossCoin(result, motion) {
       // Keep controller outcome and timing, but animate a native sprite on the stage.
       const native = coinView
