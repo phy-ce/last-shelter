@@ -305,7 +305,7 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .target {
   position: relative;
   display: block;
-  height: 18px;
+  height: 44px;
   padding: 0;
   overflow: visible;
   border: 0;
@@ -320,12 +320,12 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .enemy-name {
   position: absolute;
   left: 50%;
-  top: var(--enemy-name-top, 270px);
+  top: 20px;
   width: 100%;
   padding: 3px 6px;
   overflow: hidden;
   color: #d9d1c2;
-  font: 800 15px/1.2 var(--font-body);
+  font: 800 13px/1.2 var(--font-body);
   letter-spacing: .05em;
   text-align: center;
   text-overflow: ellipsis;
@@ -437,7 +437,7 @@ footer { position: absolute; z-index: 20; left: 18px; bottom: 8px; max-width: mi
 .enemy-group > .status-stack {
   position: absolute;
   left: 50%;
-  top: calc(var(--enemy-name-top, 270px) + 28px);
+  top: var(--enemy-status-top, 298px);
   width: min(100%, calc(var(--status-token-size) * 5 + 20px));
   max-width: calc(var(--status-token-size) * 5 + 20px);
   margin: 0;
@@ -1272,7 +1272,27 @@ header .vital strong, .hud-ammo strong, .card-pile strong { font-family: var(--f
 .preview p { font: 14px/1.65 var(--font-body); color: #e1dbcf; margin: 12px 0 0; white-space: pre-line; overflow-wrap: anywhere; }
 .preview .instruction { border-top: 1px solid #49443e; padding-top: 10px; color: #bfb6a9; font-size: 13px; }
 .hand-slot:hover .card .card-detail,
-.hand .card:is(:focus-visible, .selected) .card-detail,
+.hand.has-selection .card.selected .card-detail,
+.hand .card:is(:focus-visible, .selected) .card-detail {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  max-height: none;
+  overflow: visible;
+  color: #e1dbcf;
+  font: 11px/1.4 var(--font-body);
+  white-space: pre-line;
+}
+.hand-slot:hover .card:not(:disabled),
+.hand .card:focus-visible:not(:disabled),
+.hand.has-selection .card.selected {
+  transform: translateY(-110px) rotate(0deg) scale(1.035);
+}
+.hand-slot:hover .card > img,
+.hand-slot:hover .card > canvas,
+.hand .card:is(:focus-visible, .selected) > img,
+.hand .card:is(:focus-visible, .selected) > canvas { flex-basis: 70px; height: 70px; }
 .hand-slot:hover .card .item-source,
 .hand .card:is(:focus-visible, .selected) .item-source { display: none; }
 @media (max-height: 800px) {

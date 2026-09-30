@@ -17,7 +17,7 @@
 - Reference imagery informs presentation only. Do not copy its party systems, mind gauges, resistances, formation mechanics, or menu structure into game rules.
 
 - Resting hand cards keep a compact physical-card proportion and stay below the battlefield. Hover and keyboard focus only lift them slightly; they never grow into the enemy targeting area. Number keys select a card, and right-click opens its complete effect and source in a dedicated detail view.
-- Hand cards keep a 2.5:3.5 physical-card ratio in both resting and hover states. Hover never changes the card's height. Hover/focus reveals the complete playable effect in a fixed, readable panel above the left side of the hand. Selection pins that card's effect while aiming, even when the pointer crosses other cards; the panel updates the current target and predicted result and never intercepts targeting clicks. Use, cancellation, or a modal dismisses the preview.
+- Hand cards use one native Pixi card template across the hand, deck, rewards and details. Resting cards stay below the battlefield; mouse hover or keyboard selection raises only the active card to reveal the effect below its art. Mouse selection alone does not pin a card above the battlefield. Enemy HP/limb displays show current values only, without predicted attack results, remaining HP, kills or destruction.
 - Combat effect numbers come from content definitions and rule calculations. Conditional coin effects, delayed effects, ammo costs, noise, and exhaust retain distinct visible markers; they are not removed merely to shorten a card.
 - Rarity names remain in accessible labels. Detailed card summaries remain available to assistive technology.
 - Flavour text is on the card back, behind the 뒷면 chip, so the face carries only what is needed to play.
@@ -33,4 +33,6 @@
 - Preparation inventory tiles show consumable uses as current/maximum. The selected-item panel shows identity, provided cards, remaining uses, and the exact HP/infection change that would occur now before the use button.
 - Coin-toss audio plays once, on the HEADS/TAILS choice click. Landing and result rendering do not replay the coin sample.
 - The combat inventory is always reachable from the header or with `I`. It is read-only during combat so checking current equipment and supplies never changes combat state.
-- Visual polish is in `src/styles/visual-polish.css`; shared symbols and read-only card display helpers live in `src/ui/`.
+- Gameplay UI is drawn and hit-tested by Pixi in `src/ui/engine-ui.js`. `@pixi/ui` supplies buttons, scroll boxes, sliders and checkboxes; `@pixi/layout` lays out the native toolbar. The legacy semantic DOM remains an accessibility and controller-action mirror, not a visual layout or HTML-to-texture source. CSS only hosts the canvas and hides that mirror after initialization.
+- Card, panel and button borders use Kenney Fantasy UI Borders (CC0), with native 9-slice scaling so corners retain their size. See `public/assets/ui/kenney/LICENSE.txt`. Shared SVG symbols remain the icon source for navigation, cards, status and enemy intentions.
+- Modal titles and primary footer actions remain fixed while the native content area scrolls. Enemy names sit immediately below their current HP bar.

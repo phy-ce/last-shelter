@@ -12,6 +12,7 @@ import { ITEMS, RARITIES, itemDef, itemShape } from '../content/items.js'
 import { CLASSES, classDef } from '../content/classes.js'
 import { UPGRADE_EPAULETTE, CARD_ART, COIN_HEADS, COIN_TAILS } from '../art/assets.js'
 import { createBattleView } from '../render/battle-view.js'
+import { createEngineUI } from '../ui/engine-ui.js'
 
 const $ = (id) => document.getElementById(id);
 mountUiIcons();
@@ -47,10 +48,11 @@ const displayFont = (() => {
       enemyPosition: (enemy) => enemyPosition(enemy),
       partPosition: (enemy, part) => partPosition(enemy, part),
       aimRings: () => aimRings(),
-      shouldRun: () => Boolean(state) && !modal && !document.hidden
+      shouldRun: () => !document.hidden
     });
 
     let state;
+    let engineUI = null;
     let modal = null;
     let returnFocus = null;
     let hoverCard = null;
@@ -1357,7 +1359,7 @@ const displayFont = (() => {
       if (!modal) returnFocus = document.activeElement;
       modal = { closable: false, ...config };
       $("overlay").hidden = false;
-      $("app").inert = true;
+      $("app").inert = !engineUI;
       renderModal();
     }
 
@@ -1383,13 +1385,13 @@ const displayFont = (() => {
       return el("span", "kind-badge kind-consumable", "소모품");
     }
 
-    // 카드 뒷면 = 플레이버 텍스트. 도감·덱에서 「뒷면」을 눌러야 보인다.
+    // 도감·덱에서는 카드 자체를 클릭하거나 Enter/Space로 뒤집는다.
     function appendCardBack(node, key) {
       const flavor = CARD_FLAVOR[key];
       if (!flavor) return;
-      const chip = el("span", "flip-chip", "뒷면");
-      chip.setAttribute("role", "button");
-      chip.tabIndex = 0;
+      node.setAttribute("role", "button");
+      node.setAttribute("aria-label", `${node.querySelector("strong")?.textContent || "카드"} · 뒤집기`);
+      node.tabIndex = 0;
       const back = el("div", "card-back");
       back.append(el("p", "card-flavor", flavor));
       const flip = (event) => {
@@ -1397,10 +1399,9 @@ const displayFont = (() => {
         event.preventDefault();
         node.classList.toggle("flipped");
       };
-      chip.addEventListener("click", flip);
-      chip.addEventListener("keydown", (event) => { if (event.code === "Enter" || event.code === "Space") flip(event); });
-      back.addEventListener("click", flip);
-      node.append(chip, back);
+      node.addEventListener("click", flip);
+      node.addEventListener("keydown", (event) => { if (event.code === "Enter" || event.code === "Space") flip(event); });
+      node.append(back);
     }
 
     // 전투 HUD와 같은 모양의 상태 띠(보상·가방 화면). deckAction이 있으면 덱 장수가 버튼이 된다.
@@ -2114,7 +2115,7 @@ const displayFont = (() => {
           confirm.disabled = !selectedClass;
           footer.append(selection, confirm);
         } else {
-          footer.textContent = "클릭하여 선택";
+          footer.textContent = "";
         }
       }
 
@@ -2215,21 +2216,7 @@ const displayFont = (() => {
         if (coinData !== data || !data.spinning) return;
         Sound.resumeWet();
       }).catch(() => {});
-      const angle = result === "heads" ? 1800 : 1980;
-      const frames = motionOn() ? [
-        { transform: "translateY(0) rotateX(0deg) scale(1)", offset: 0 },
-        { transform: "translateY(12px) rotateX(-25deg) scale(.94)", offset: .07 },
-        { transform: "translateY(-80px) rotateX(720deg) scale(.83)", offset: .32 },
-        { transform: "translateY(-96px) rotateX(1080deg) scale(.78)", offset: .48 },
-        { transform: "translateY(-66px) rotateX(1440deg) scale(.87)", offset: .64 },
-        { transform: "translateY(0) rotateX(" + angle + "deg) scale(1)", offset: .84 },
-        { transform: "translateY(-12px) rotateX(" + (angle + 18) + "deg) scale(1.04)", offset: .9 },
-        { transform: "translateY(0) rotateX(" + angle + "deg) scale(1)", offset: 1 }
-      ] : [{ transform: "rotateX(" + angle + "deg)", opacity: .5 }, { transform: "rotateX(" + angle + "deg)", opacity: 1 }];
-      const animation = coin.animate(frames, { duration: motionOn() ? 1900 : 120, easing: "linear", fill: "forwards" });
-      await animation.finished.catch(() => {});
-      coin.style.transform = "rotateX(" + (result === "heads" ? 0 : 180) + "deg)";
-      animation.cancel();
+      await engineUI.tossCoin(result, motionOn());
       if (coinData !== data) return;
 
       coin.parentElement.classList.remove("tossing");
@@ -2324,6 +2311,7 @@ const displayFont = (() => {
       if (m.readOnly) tile.classList.add("readonly");
       if (bagSelected === ref) tile.classList.add("selected");
       if (!m.readOnly) tile.addEventListener("pointerdown", (event) => beginBagDrag(event, m, ref));
+      tile.dataset.engineRef = ref;
       bindItemCardTooltip(tile, data);
       return tile;
     }
@@ -3060,17 +3048,7 @@ const displayFont = (() => {
       if (data.target === "self") return "전투 화면을 클릭하면 사용.";
       if (data.target === "all") return "전투 화면을 클릭하면 전체 공격.";
 
-      const enemy = state.enemies.find((e) => e.id === (hoverAim?.enemyId ?? state.target));
-      if (!enemy) return "몸통 또는 사지를 선택하세요.";
-      const limb = enemy.parts.find((p) => p.key === hoverAim?.partKey && p.hp > 0);
-      const damage = attackDamage(card, limb ? limb.key : null) * hitCount(card);
-
-      const when = data.delayed ? "다음 턴 시작에 " : "";
-      if (limb) {
-        return `${enemy.name} / ${limb.name}\n${when}내구도 ${limb.hp} → ${Math.max(0, limb.hp - damage)}${limb.hp <= damage ? " · 파괴" : ""}\n몸통 체력 ${enemy.hp} 유지\n파괴: ${limb.effect}`;
-      }
-
-      return `${enemy.name} / 몸통\n${when}체력 ${enemy.hp} → ${Math.max(0, enemy.hp - damage)}${enemy.hp <= damage ? " · 처치" : ""}`;
+      return "몸통 또는 사지를 선택하여 사용.";
     }
 
     function updatePreview() {
@@ -3279,9 +3257,6 @@ const displayFont = (() => {
 
           for (const limb of enemy.parts) {
             const canAimLimb = Boolean(selected && data.target === "single");
-            const aimedDamage = canAimLimb ? attackDamage(selected, limb.key) * hitCount(selected) : 0;
-            const effectiveDamage = Math.max(0, aimedDamage - (enemy.block || 0));
-            const afterHp = Math.max(0, limb.hp - effectiveDamage);
             const node = button(
               "",
               () => {
@@ -3295,14 +3270,11 @@ const displayFont = (() => {
             const limbBar = el("span", "limb-hp-bar");
             const limbFill = el("i", "limb-hp-fill");
             limbFill.style.width = `${clamp(limb.hp / limb.maxHp * 100, 0, 100)}%`;
-            const limbLoss = el("i", "limb-hp-loss");
-            limbLoss.style.left = `${clamp(afterHp / limb.maxHp * 100, 0, 100)}%`;
-            limbLoss.style.width = `${clamp((limb.hp - afterHp) / limb.maxHp * 100, 0, 100)}%`;
-            limbBar.append(limbFill, limbLoss);
+            limbBar.append(limbFill);
             partCopy.append(
               el("strong", "", limb.name),
               limbBar,
-              el("small", "", canAimLimb ? `${limb.hp} → ${afterHp}` : `${limb.hp}/${limb.maxHp}`)
+              el("small", "", `${limb.hp}/${limb.maxHp}`)
             );
             node.replaceChildren(uiIcon(limb.key === "arm" ? "arm" : "leg"), partCopy);
             const limbWorld = partPosition(enemy, limb);
@@ -3349,17 +3321,6 @@ const displayFont = (() => {
         hpFill.style.width = `${Math.max(0, enemy.hp / enemy.maxHp * 100)}%`;
         const hpBar = el("span", "enemy-hp-bar");
         hpBar.append(hpFill);
-        const aimingLimb = selected && data.target === "single" && hoverAim?.enemyId === enemy.id && hoverAim.partKey;
-        if (selected && data.damage && !aimingLimb) {
-          const rawDamage = attackDamage(selected) * hitCount(selected);
-          const effectiveDamage = Math.max(0, rawDamage - (enemy.block || 0));
-          const afterHp = Math.max(0, enemy.hp - effectiveDamage);
-          const hpLoss = el("i", "enemy-hp-loss");
-          hpLoss.style.left = `${clamp(afterHp / enemy.maxHp * 100, 0, 100)}%`;
-          hpLoss.style.width = `${clamp((enemy.hp - afterHp) / enemy.maxHp * 100, 0, 100)}%`;
-          hpLoss.title = enemy.block > 0 ? `방어도 ${Math.min(enemy.block, rawDamage)} 흡수 · 체력 피해 ${effectiveDamage}` : `체력 피해 ${effectiveDamage}`;
-          hpBar.append(hpLoss);
-        }
         const hpReadout = el("span", "enemy-hp-readout");
         hpReadout.append(el("b", "", enemy.hp), document.createTextNode(` / ${enemy.maxHp}`));
         const intent = el("span", `enemy-intent${enemy.intent?.coin && !rules.intentsHidden(state) ? " lethal" : ""}`);
@@ -3443,7 +3404,7 @@ const displayFont = (() => {
         if (enemyStatusStack.childElementCount) group.append(enemyStatusStack);
         group.style.left = `${clamp(world.x, view.w <= 600 ? 48 : 78, view.w - (view.w <= 600 ? 48 : 78))}px`;
         group.style.top = `${groupTop}px`;
-        group.style.setProperty("--enemy-name-top", `${world.y - groupTop + 8}px`);
+        group.style.setProperty("--enemy-status-top", `${world.y - groupTop + 36}px`);
         $("targets").append(group);
       }
       positionStatuses();
@@ -3575,6 +3536,7 @@ const displayFont = (() => {
     canvas.addEventListener("pointermove", (event) => {
       if (!ready() || !selectedCard()) return;
       const rect = canvas.getBoundingClientRect();
+      if (engineUI?.contains(event.clientX - rect.left, event.clientY - rect.top)) return;
       const hit = hitTest(event.clientX - rect.left, event.clientY - rect.top);
       const next = hit?.kind === "enemy" ? hit : null;
       if (hoverAim?.enemyId !== next?.enemyId || hoverAim?.partKey !== next?.partKey) {
@@ -3592,6 +3554,8 @@ const displayFont = (() => {
 
     canvas.addEventListener("click", (event) => {
       if (!ready()) return;
+      const uiRect = canvas.getBoundingClientRect();
+      if (engineUI?.contains(event.clientX - uiRect.left, event.clientY - uiRect.top)) return;
       const selected = selectedCard();
       if (selected && CARDS[selected.key].target === "all") {
         executeCard("all");
@@ -3613,7 +3577,7 @@ const displayFont = (() => {
 
     document.addEventListener("keydown", (event) => {
       if (event.ctrlKey || event.altKey || event.metaKey || event.isComposing) return;
-      if (event.target?.matches?.("input, textarea, select, [contenteditable='true']")) return;
+      if (event.code !== "Escape" && event.target?.matches?.("input, textarea, select, [contenteditable='true']")) return;
 
       if (event.code === "KeyM" && !event.repeat) {
         event.preventDefault();
@@ -3789,7 +3753,24 @@ const displayFont = (() => {
       const line = $("modal").querySelector(".description");
       if (line) line.textContent = "화면 준비 중";
       return battle.init();
-    }).then(boot, (error) => {
+    }).then(async () => {
+      engineUI = await createEngineUI(battle.application, {
+        getState: () => state,
+        getModal: () => modal,
+        geometry,
+        bagRotation: ref => ref === "incoming" ? modal?.incomingRot || 0 : state?.inventory.find(item => item.uid === Number(ref))?.pos?.rot || 0,
+        bagSize: (ref, rot) => rules.itemSize(bagItemOf(modal, ref), rot),
+        bagCanPlace: (ref, x, y, rot) => rules.canPlace(state, bagItemOf(modal, ref), x, y, rot),
+        bagSelect: ref => { bagSelected = ref; renderModal(); },
+        bagDrop: (ref, x, y, rot) => dropAt(modal, ref, x, y, rot),
+        bagEquip: (ref, slot) => equipRef(modal, ref, slot),
+        bagDiscard: ref => discardRef(modal, ref)
+      });
+      $("app").inert = false;
+      resizeCanvas();
+      if (import.meta.env.DEV) window.__engineUI = engineUI;
+      boot();
+    }).catch((error) => {
       console.error(error);
       const line = $("modal").querySelector(".description");
       if (line) line.textContent = "그래픽을 시작하지 못했습니다. 브라우저의 하드웨어 가속(WebGL)을 켜 주세요.";
@@ -3801,12 +3782,12 @@ const displayFont = (() => {
     if (savedRun) {
       openModal({
         type: "options",
-        title: "벽 너머에서 신호가 남아 있다",
+        title: "이어하기",
         subtitle: "SIGNAL FOUND",
-        description: `${STAGES[savedRun.state.stage]?.name ?? "알 수 없는 구역"} · TURN ${savedRun.state.turn} · 체력 ${savedRun.state.hp}/${savedRun.state.maxHp}`,
+        description: "",
         options: [
-          { title: "이어하기", text: "마지막 턴 시작 시점으로 복귀.", action: () => restoreGame(savedRun) },
-          { title: "새로 시작", text: "저장된 탈출을 버립니다.", action: () => { clearRun(); chooseClass(); } }
+          { title: "계속하기", text: "", action: () => restoreGame(savedRun) },
+          { title: "새 게임", text: "", action: () => { clearRun(); chooseClass(); } }
         ]
       });
     } else {

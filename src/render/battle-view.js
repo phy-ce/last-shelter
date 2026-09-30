@@ -471,8 +471,9 @@ export function createBattleView(canvas, hooks) {
         preference: 'webgl',
         resolution: Math.min(devicePixelRatio || 1, 2),
       })
-      // game.js handles pointer input on the canvas itself; keep Pixi's event system out of it.
-      app.renderer.events?.setTargetElement?.(null)
+      // Native UI uses Pixi's federated events; combat figures remain read-only.
+      world.eventMode = 'none'
+      overlay.eventMode = 'none'
       canvas.style.removeProperty('touch-action')
       canvas.style.removeProperty('cursor')
 
@@ -521,6 +522,8 @@ export function createBattleView(canvas, hooks) {
       app.renderer.render(app.stage)
       view.resume()
     },
+
+    get application() { return app },
 
     resize(w, h, dpr) {
       size = { w, h, dpr }
