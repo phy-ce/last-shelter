@@ -2108,6 +2108,7 @@ const displayFont = (() => {
       if (["deck", "upgrade"].includes(m.type)) root.classList.add("deck-modal");
       if (m.type === "upgrade") root.classList.add("upgrade-modal");
       if (m.type === "route") root.classList.add("route-modal");
+      if (m.type === "inventory") root.classList.add("inventory-modal");
       root.replaceChildren();
       $("overlay").querySelector(".modal-aside")?.remove();
       const head = el("div", "row");
@@ -2864,7 +2865,12 @@ const displayFont = (() => {
       tile.append(itemArtNode(data, "bag-art"), el("span", "bag-name", data.kind === "resource" ? data.name : rules.itemName(item)));
       // 강화한 장비는 카드와 같은 강화 견장을 단다.
       if (item.upgraded) { tile.classList.add("upgraded"); appendUpgradeMark(tile, true); }
-      if (item.uses != null) tile.append(el("span", "bag-uses", `×${item.uses}`));
+      if (item.uses != null) {
+        const uses = data.kind === "consumable" ? `${item.uses}/${data.uses}` : String(item.uses);
+        const usesBadge = el("span", "bag-uses", uses);
+        usesBadge.setAttribute("aria-label", data.kind === "consumable" ? `사용 횟수 ${item.uses}/${data.uses}` : `${data.name} ${item.uses}개`);
+        tile.append(usesBadge);
+      }
       if (m.readOnly) tile.classList.add("readonly");
       if (bagSelected === ref) tile.classList.add("selected");
       if (!m.readOnly) tile.addEventListener("pointerdown", (event) => beginBagDrag(event, m, ref));
@@ -2940,8 +2946,26 @@ const displayFont = (() => {
         return panel;
       }
       const data = itemDef(item.key);
-      panel.append(el("strong", "", rules.itemLabel(item)));
-      if (data.cards.length) panel.append(el("p", "", data.cards.map((key) => CARDS[key].name + (item.upgraded ? "+" : "")).join(" · ")));
+      const heading = el("div", "bag-detail-heading");
+      const identity = el("div", "bag-detail-identity");
+      const identityCopy = el("div");
+      identityCopy.append(
+        el("small", "", data.kind === "hand" ? `${data.hands === 2 ? "양손" : "한손"} 장비` : data.kind === "consumable" ? "소모품" : "자원"),
+        el("strong", "", rules.itemLabel(item))
+      );
+      identity.append(uiIcon(data.kind === "hand" ? "attack" : data.kind === "consumable" ? "heal" : "ammo"), identityCopy);
+      heading.append(identity);
+      if (item.uses != null) {
+        const uses = el("span", "bag-detail-uses");
+        uses.append(el("b", "", String(item.uses)), el("small", "", data.kind === "consumable" ? `/ ${data.uses}` : "개"));
+        heading.append(uses);
+      }
+      panel.append(heading);
+      if (data.cards.length) {
+        const cards = el("div", "bag-card-list");
+        cards.append(el("small", "", "제공 카드"), el("p", "", data.cards.map((key) => CARDS[key].name + (item.upgraded ? "+" : "")).join(" · ")));
+        panel.append(cards);
+      }
       const row = el("div", "row");
       if (data.kind === "hand" && rules.canEquip(state)) {
         const slots = data.hands === 2 ? [["left", "양손 장착"]] : [["left", "왼손 장착"], ["right", "오른손 장착"]];
@@ -2958,8 +2982,23 @@ const displayFont = (() => {
       if (size.w !== size.h && (item.pos || ref === "incoming")) row.append(button("회전 · R", () => rotateBag()));
       const recovery = preparationRecoveryInfo(item);
       if (recovery && !m.combatDone && !m.readOnly && ref !== "incoming") {
-        const effects = [recovery.heal ? `체력 +${recovery.heal}` : null, recovery.cure ? `감염 −${recovery.cure}` : null].filter(Boolean).join(" · ");
-        const use = button(`1회 사용 · ${effects}`, () => { preparationRecovery(item); renderModal(); });
+        const healed = Math.min(recovery.heal, state.maxHp - state.hp);
+        const cured = Math.min(recovery.cure, state.infection);
+        const preview = el("div", `bag-use-preview${recovery.useful ? "" : " unavailable"}`);
+        preview.append(el("small", "", "지금 사용하면"));
+        if (recovery.heal) {
+          const health = el("span");
+          health.append(uiIcon("heart"), el("b", "", healed ? `체력 +${healed}` : "체력 최대"));
+          preview.append(health);
+        }
+        if (recovery.cure) {
+          const infection = el("span");
+          infection.append(uiIcon("status-infection"), el("b", "", cured ? `감염 −${cured}` : "감염 없음"));
+          preview.append(infection);
+        }
+        panel.append(preview);
+        const effects = [healed ? `체력 +${healed}` : null, cured ? `감염 −${cured}` : null].filter(Boolean).join(" · ");
+        const use = button(effects ? `1회 사용 · ${effects}` : "현재 사용할 필요 없음", () => { preparationRecovery(item); renderModal(); }, "button primary bag-use-button");
         const noArms = !rules.hasWorkingArm(state);
         use.disabled = noArms || !recovery.useful;
         if (noArms) use.title = "사용할 수 있는 팔이 없습니다.";

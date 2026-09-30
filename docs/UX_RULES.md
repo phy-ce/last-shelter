@@ -30,6 +30,7 @@
 - During between-battle preparation, every owned consumable whose card defines persistent HP recovery or infection reduction can be used directly from the bag. This currently includes the medkit, antibiotics, painkillers, and tourniquet. The button and applied values come from the card's content definition, never duplicated UI constants.
 - Preparation use consumes exactly one use and removes the item and its cards at zero uses. Combat-only portions such as block, energy, card draw, strength, noise control, and one-turn injury suppression do not carry into preparation; the button states only the persistent effect that will actually apply.
 - A preparation recovery button remains visible but disabled when there is nothing to heal/cure or the survivor cannot use consumables, and it explains the reason. Incoming loot cannot be consumed before it is placed in the bag, and the combat inventory remains read-only.
+- Preparation inventory tiles show consumable uses as current/maximum. The selected-item panel shows identity, provided cards, remaining uses, and the exact HP/infection change that would occur now before the use button.
 - Coin-toss audio plays once, on the HEADS/TAILS choice click. Landing and result rendering do not replay the coin sample.
 - The combat inventory is always reachable from the header or with `I`. It is read-only during combat so checking current equipment and supplies never changes combat state.
 - Visual polish is in `src/styles/visual-polish.css`; shared symbols and read-only card display helpers live in `src/ui/`.
