@@ -33,17 +33,17 @@ const label = (value, w, size = 14, color = C.paper, bold = false) => new Text({
  * It remains an accessibility/automation mirror while the controller is migrated. */
 export async function createEngineUI(app, hooks) {
   const root = new Container({ label: 'engine-ui' })
-  const hud = new Container(), hand = new Container(), dialogs = new Container(), tips = new Container()
+  const hud = new Container(), hand = new Container(), combatDialogue = new Container(), dialogs = new Container(), tips = new Container()
   hand.sortableChildren = true
   const dropHint = new Graphics()
-  root.addChild(hud, hand, dialogs, tips, dropHint)
+  root.addChild(hud, hand, combatDialogue, dialogs, tips, dropHint)
   app.stage.addChild(root)
   const textures = new Map(), controls = [], regions = []
   let dirty = true, tipDirty = true, pointer = { x: 0, y: 0 }, drag = null, coinTween = null, menuTip = null, coinView = null, editingSlider = false
   let lastModal = null, scrollY = 0, scrollbox = null
   let keyboardSelection = false, hoveredHandIndex = null
   const semantic = id => document.getElementById(id)
-  const usesDomModal = modal => Boolean(modal && (modal.subtitle === 'CHOOSE SURVIVOR' || ['loot', 'inventory', 'coin'].includes(modal.type)))
+  const usesDomModal = modal => Boolean(modal && (modal.subtitle === 'CHOOSE SURVIVOR' || ['loot', 'inventory', 'coin', 'route'].includes(modal.type)))
   const dispatch = (node, type) => node.dispatchEvent(new PointerEvent(type, { pointerType: 'mouse', bubbles: false }))
 
   function art(node, w, h) {
@@ -451,6 +451,29 @@ export async function createEngineUI(app, hooks) {
     })
   }
 
+  function drawCombatDialogue(w, h) {
+    const cue = hooks.getEnemyDialogue?.()
+    if (!cue || hooks.getModal()) return
+    const dw = Math.min(940, w - 120), dh = 126
+    const x = (w - dw) / 2, y = h - 188
+    const shell = new Container()
+    shell.position.set(x, y)
+    shell.addChild(
+      new Graphics().rect(-70, -22, dw + 140, dh + 44).fill({ color: 0x050506, alpha: .32 }),
+      box(dw, dh, 0x151114, 0x725449, 4),
+      new Graphics().rect(14, 16, 3, dh - 32).fill({ color: 0xa76b5f, alpha: .9 })
+    )
+    const eyebrow = label('ENEMY ACTION', dw - 64, 10, 0xa88978, true)
+    const speaker = label(cue.speaker, dw - 64, 15, 0xd9b7a1, true)
+    const line = label(cue.text, dw - 76, 22, 0xeee3d4, true)
+    eyebrow.position.set(30, 17)
+    speaker.position.set(30, 36)
+    line.position.set(30, 66)
+    shell.addChild(eyebrow, speaker, line)
+    combatDialogue.addChild(shell)
+    if (motionOn()) gsap.fromTo(shell, { y: y + 22, alpha: 0 }, { y, alpha: 1, duration: .2, ease: 'power2.out' })
+  }
+
   function drawCoinDialog(w, h) {
     const source = semantic('modal')
     const mw = Math.min(580, w - 48), mh = Math.min(640, h - 56)
@@ -666,14 +689,14 @@ export async function createEngineUI(app, hooks) {
     dirty = false
     if (scrollbox && !scrollbox.destroyed) scrollY = scrollbox.scrollY
     controls.length = 0; regions.length = 0
-    for (const layer of [hud, hand, dialogs, tips]) {
+    for (const layer of [hud, hand, combatDialogue, dialogs, tips]) {
       for (const child of layer.removeChildren()) { gsap.killTweensOf(child); child.destroy({ children: true }) }
     }
     scrollbox = null; coinView = null
     const w = app.screen.width, h = app.screen.height
     const domModal = usesDomModal(hooks.getModal())
     document.body.classList.toggle('engine-dom-modal', domModal)
-    drawHud(w, h); if (!domModal) drawDialog(w, h)
+    drawHud(w, h); drawCombatDialogue(w, h); if (!domModal) drawDialog(w, h)
     hud.eventMode = hooks.getModal() ? 'none' : 'passive'; hand.eventMode = hooks.getModal() ? 'none' : 'passive'
     dialogs.eventMode = hooks.getModal() && !domModal ? 'static' : 'none'
     drawTip()
@@ -772,6 +795,28 @@ export async function createEngineUI(app, hooks) {
   return {
     root,
     refresh() { dirty = true },
+    dismissHand() {
+      hoveredHandIndex = null
+      if (!hand.children.length || !motionOn()) return Promise.resolve()
+      hand.eventMode = 'none'
+      return new Promise(resolve => {
+        // Animate the persistent hand layer rather than individual cards. A
+        // keyboard event can request a redraw while this animation is running,
+        // which replaces the card display objects and used to strand the turn
+        // in the resolving phase with a GSAP target error.
+        gsap.killTweensOf(hand)
+        gsap.to(hand, {
+          y: 420,
+          duration: .3,
+          ease: 'power2.in',
+          overwrite: true,
+          onComplete: () => {
+            hand.y = 0
+            resolve()
+          },
+        })
+      })
+    },
     contains(x, y) { return (!usesDomModal(hooks.getModal()) && Boolean(hooks.getModal())) || controls.some(control => !control.view.destroyed && inside(control, { x, y })) },
     snapshot() { return controls.filter(control => !control.view.destroyed).map(control => { const p = control.view.toGlobal({ x: control.w / 2, y: control.h / 2 }); return { text: control.source.getAttribute('aria-label') || control.source.textContent.trim(), id: control.source.id, x: p.x, y: p.y, disabled: Boolean(control.source.disabled) } }) },
     async tossCoin(result, motion) {

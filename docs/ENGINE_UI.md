@@ -42,6 +42,12 @@ Costs and intent values use an icon with a small lower-right number. Persistent
 location titles, atmospheric menu headings, obvious click instructions and
 footer logs are omitted from the native screen.
 
+Enemy turns use a short presentation sequence: the native hand exits below the
+viewport, a bottom narration panel identifies the acting enemy and describes its
+current intent, and only then does the corresponding action animation resolve.
+The enemy/action-specific copy lives in `src/content/enemy-dialogue.js`, separate
+from combat resolution, so narration can be revised without touching rules.
+
 ## Controller boundary
 
 The legacy controller still creates semantic nodes with its existing action
@@ -55,6 +61,33 @@ Inventory drag/drop delegates to existing `dropAt`, `equipRef`, `discardRef`;
 placement hints call read-only `rules.canPlace`. The renderer does not write
 inventory positions or combat state. Coin outcomes and their DOM animation stay
 in the controller.
+
+## Branching map prototype
+
+The main game now opens `src/ui/route-map.js` after battle rewards, styled by
+`src/styles/route-map.css` as a dedicated DOM map modal. Clicking a maintenance
+or unknown encounter node previews only its name and atmosphere; a separate
+travel button commits the choice. Maintenance offers treatment or upgrades.
+Unknown encounters lead to a skill offer or coin-based equipment search; low
+health excludes warehouse search. Both return through mandatory inventory
+preparation before the next battle. Existing seven battle stages remain ordered;
+only intermission destinations branch in this integration. Visited connections
+are kept in a controller-side display record, separate from combat save state.
+
+`/map-demo.html` opens a standalone interactive route mockup. `src/ui/map-demo.js`
+draws a city plan and connected locations using SVG plus the shared icon set;
+`src/styles/map-demo.css` lays out the map and destination details. Visited
+locations are represented by map connections, without a separate text history.
+It previews selecting and confirming destinations through seven steps, with
+branches reconverging before a shared final boss. All route data and visited
+locations are local to the demo; it does not alter run state, saves or combat.
+Location descriptions here are design proposals. Destination details show only
+the location name and atmospheric description; enemy groups, rewards and dangers
+are not disclosed before arrival.
+Maintenance locations combine treatment and equipment upgrades. Skill acquisition
+and coin-based equipment offers are possible random encounters, not fixed
+destination types. Encounter candidates stay hidden. Actual encounter selection
+and maintenance actions are not implemented here.
 
 ## Review
 

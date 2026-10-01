@@ -8,11 +8,13 @@ import { Music } from '../audio/music.js'
 import { Sound } from '../audio/engine.js'
 import * as rules from '../core/combat-rules.js'
 import { CARDS, CARD_FLAVOR, STAGES, LIMBS, BURN_TEXT, skillEffects } from '../content/combat.js'
+import { enemyActionLine } from '../content/enemy-dialogue.js'
 import { ITEMS, RARITIES, itemDef, itemShape } from '../content/items.js'
 import { CLASSES, classDef } from '../content/classes.js'
 import { UPGRADE_EPAULETTE, CARD_ART, COIN_HEADS, COIN_TAILS } from '../art/assets.js'
 import { createBattleView } from '../render/battle-view.js'
 import { createEngineUI } from '../ui/engine-ui.js'
+import { createRouteMap } from '../ui/route-map.js'
 
 const $ = (id) => document.getElementById(id);
 mountUiIcons();
@@ -59,6 +61,9 @@ const displayFont = (() => {
     let restoringHandFocus = false;
     let dismissedPreviewCard = null;
     let hoverAim = null;
+    let enemyDialogue = null;
+    let visitedRoutes = [];
+    let committedRoute = null;
     let coinData = null;
     let coinResolver = null;
     let deckGrouped = true;
@@ -942,6 +947,8 @@ const displayFont = (() => {
       Sound.ambience();
 
       state = rules.createState(classId);
+      visitedRoutes = [];
+      committedRoute = null;
 
       resetVisuals();
       startBattle();
@@ -953,6 +960,7 @@ const displayFont = (() => {
     function resetVisuals() {
       hoverCard = null;
       hoverAim = null;
+      enemyDialogue = null;
       battle.reset();
       clearTimeout(injuryTimer);
       $("injuryBanner").classList.remove("active");
@@ -966,6 +974,11 @@ const displayFont = (() => {
       Sound.resumeWet();
       Sound.ambience();
       state = saved.state;
+      try {
+        const routeSave = JSON.parse(localStorage.getItem('last-shelter:routes') || 'null');
+        visitedRoutes = routeSave?.uid === saved.uid ? routeSave.visited.slice(0, state.stage) : [];
+      } catch { visitedRoutes = []; }
+      committedRoute = null;
       rules.setUid(saved.uid);
       battleMusic();
       present(rules.normalizeBag(state));
@@ -993,6 +1006,8 @@ const displayFont = (() => {
 
     async function startTurn() {
       const version = gameVersion;
+      enemyDialogue = null;
+      engineUI?.refresh();
       present(rules.beginTurn(state));
       if (checkResult()) return;
       render();
@@ -1015,6 +1030,7 @@ const displayFont = (() => {
       present(rules.finishTurnStart(state));
       render();
       saveRun(state, rules.getUid());
+      try { localStorage.setItem('last-shelter:routes', JSON.stringify({ uid: rules.getUid(), visited: visitedRoutes })); } catch {}
     }
 
     function selectCard(id) {
@@ -1217,6 +1233,19 @@ const displayFont = (() => {
       }
     }
 
+    async function announceEnemyAction(enemy, intent) {
+      enemyDialogue = { speaker: enemy.name, text: enemyActionLine(enemy, intent, state.turn) };
+      $("lastLog").textContent = enemyDialogue.text;
+      engineUI?.refresh();
+      await wait(motionOn() ? 720 : 320);
+    }
+
+    async function dismissEnemyDialogue() {
+      enemyDialogue = null;
+      engineUI?.refresh();
+      await wait(motionOn() ? 130 : 0);
+    }
+
     async function endTurn() {
       if (!ready()) return;
       if (state.selected !== null) {
@@ -1230,12 +1259,15 @@ const displayFont = (() => {
       hoverCard = null;
       hideTooltip();
       if (motionOn() && state.hand.length) {
-        document.querySelectorAll("#hand .card").forEach((node, index) => {
-          node.style.setProperty("--discard-delay", `${index * 22}ms`);
-          node.classList.add("discarding");
-        });
         Sound.play("turnEnd");
-        await wait(Math.min(320, 180 + state.hand.length * 22));
+        if (engineUI) await engineUI.dismissHand();
+        else {
+          document.querySelectorAll("#hand .card").forEach((node, index) => {
+            node.style.setProperty("--discard-delay", `${index * 22}ms`);
+            node.classList.add("discarding");
+          });
+          await wait(Math.min(320, 180 + state.hand.length * 22));
+        }
         if (version !== gameVersion) return;
       }
       rules.discardHand(state);
@@ -1261,11 +1293,15 @@ const displayFont = (() => {
         if (version !== gameVersion) return;
         await wait(motionOn() ? 210 : 30);
         const intent = { ...enemy.intent };
+        await announceEnemyAction(enemy, intent);
+        if (version !== gameVersion) return;
 
         const events = [];
         if (rules.resolveNonAttack(state, enemy, intent, events)) {
           present(events);
           render();
+          await wait(motionOn() ? 420 : 120);
+          await dismissEnemyDialogue();
           continue;
         }
 
@@ -1281,6 +1317,7 @@ const displayFont = (() => {
           if (won) {
             present(rules.evade(state, enemy));
             render();
+            await dismissEnemyDialogue();
             continue;
           }
         }
@@ -1307,6 +1344,7 @@ const displayFont = (() => {
           await wait(motionOn() ? 1450 : 500);
         }
         render();
+        await dismissEnemyDialogue();
       }
 
       rules.endEnemyPhase(state);
@@ -1571,6 +1609,21 @@ const displayFont = (() => {
       if (m.type === "inventory") root.classList.add("inventory-modal");
       root.replaceChildren();
       $("overlay").querySelector(".modal-aside")?.remove();
+      if (m.type === "route") {
+        root.className = "modal run-map-modal";
+        const heading = el("div", "row");
+        const title = el("h2", "", "폐쇄 구역");
+        title.id = "modalTitle";
+        heading.append(title);
+        root.append(heading, createRouteMap({
+          stage: state.stage,
+          stages: STAGES,
+          choices: m.options,
+          visited: visitedRoutes,
+          manage: () => showInventory(null, chooseRoute),
+        }));
+        return;
+      }
       const head = el("div", "row");
       const titles = el("div");
       const title = el("h2", "", m.title);
@@ -2707,6 +2760,7 @@ const displayFont = (() => {
 
     function nextStage() {
       rules.nextStage(state);
+      committedRoute = null;
       closeModal();
       startBattle();
     }
@@ -2717,13 +2771,33 @@ const displayFont = (() => {
     }
 
     function chooseRoute() {
+      if (committedRoute === 0) { showMaintenance(); return; }
+      if (committedRoute === 1) { prepareNextBattle(); return; }
       openModal({
         type: "route",
-        title: "벽 뒤의 발소리가 멎었다",
-        subtitle: "CHOOSE YOUR PATH",
+        title: "폐쇄 구역",
+        options: [
+          { action: () => { committedRoute = 0; visitedRoutes[state.stage] = 0; showMaintenance(); } },
+          { action: () => {
+            committedRoute = 1;
+            visitedRoutes[state.stage] = 1;
+            // The encounter is chosen once, after explicit travel confirmation.
+            // Avoid presenting an unusable warehouse encounter at low health.
+            if (rules.canSearchWarehouse(state) && Math.random() < .5) searchWarehouse();
+            else offerSkill();
+          } },
+        ],
+      });
+    }
+
+    function showMaintenance() {
+      const config = {
+        type: "options",
+        title: "정비소",
+        subtitle: null,
         options: [
           {
-            title: "은신처",
+            title: "치료",
             art: "/assets/art/route-shelter-v1.webp",
             tone: "shelter",
             text: "체력 15 회복 · 감염 2 감소.\n사지 부상 1곳 치료.",
@@ -2753,7 +2827,7 @@ const displayFont = (() => {
             }
           },
           {
-            title: "정비소",
+            title: "강화",
             art: "/assets/art/route-workshop-v1.webp",
             tone: "workshop",
             text: "카드 1장 영구 강화.",
@@ -2764,24 +2838,10 @@ const displayFont = (() => {
               subtitle: "FIELD WORKSHOP",
               description: "장비 하나를 강화하거나, 장비에 속하지 않은 스킬을 묶어서 강화합니다. 후보마다 강화 결과가 바로 표시됩니다."
             })
-          },
-          {
-            title: "낯선 생존자",
-            art: "/assets/art/route-stranger-v1.webp",
-            tone: "stranger",
-            text: "스킬 카드 3장 중 1장 획득.\n장비 없이 덱에 영구 추가.",
-            action: offerSkill
-          },
-          {
-            title: "군수 창고 · 동전",
-            art: "/assets/art/route-armory-v1.webp",
-            tone: "armory",
-            text: "성공: 장비·탄약 선택\n실패: 체력 −6",
-            disabled: !rules.canSearchWarehouse(state),
-            action: searchWarehouse
           }
         ]
-      });
+      };
+      openModal(config);
     }
 
     // 낯선 생존자: 장비에 묶이지 않은 스킬 카드를 하나 고른다.
@@ -3770,6 +3830,7 @@ const displayFont = (() => {
       engineUI = await createEngineUI(battle.application, {
         getState: () => state,
         getModal: () => modal,
+        getEnemyDialogue: () => enemyDialogue,
         geometry,
         bagRotation: ref => ref === "incoming" ? modal?.incomingRot || 0 : state?.inventory.find(item => item.uid === Number(ref))?.pos?.rot || 0,
         bagSize: (ref, rot) => rules.itemSize(bagItemOf(modal, ref), rot),

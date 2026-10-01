@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Last Shelter · 경로 데모</title>
+  <link rel="stylesheet" href="/src/styles/map-demo.css" />
+</head>
+<body>
+  <div class="demo-shell">
+    <header><a href="/">LAST SHELTER</a><button id="reset">경로 초기화</button></header>
+    <main>
+      <section class="map-area" aria-label="분기 지도">
+        <div class="map-heading"><h1>폐쇄 구역</h1><span id="progress">01 / 07</span></div>
+        <div class="map-surface">
+          <svg id="map" viewBox="0 0 1240 760" preserveAspectRatio="none" aria-label="구역 연결 지도">
+            <defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#bac0a9" stroke-opacity=".045" /></pattern></defs>
+            <rect width="1240" height="760" fill="url(#grid)" />
+            <g id="terrain"></g><g id="connections"></g>
+          </svg>
+          <div id="nodes"></div>
+          <div class="map-stamp">출입 통제<br><small>SECTOR 01</small></div>
+          <span class="north">N ↑</span>
+          <span class="map-coordinate">35° 41′ N / 139° 41′ E</span>
+        </div>
+        <footer class="map-footer"><div class="legend"><span class="legend-current">현재</span><span class="legend-next">이동 가능</span><span class="legend-path">지나온 길</span></div></footer>
+      </section>
+      <aside>
+        <div id="details" aria-live="polite"></div>
+        <button id="travel" class="travel" disabled>목적지를 선택하세요</button>
+      </aside>
+    </main>
+    <div id="arrival" role="status"></div>
+  </div>
+  <script type="module" src="/src/ui/map-demo.js"></script>
+</body>
+</html>

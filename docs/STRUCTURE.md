@@ -25,6 +25,8 @@
 | `src/render/battle-view.js` | 전투 장면(Pixi). 배경·인물·적·이펙트·입자·빛·카메라. `state`는 읽기만 | Codex |
 | `src/ui/engine-ui.js` | 게임 UI(Pixi). 상단 정보·손패·모달·가방·툴팁. 자세한 건 `ENGINE_UI.md` | Codex |
 | `src/ui/icons.js` | 공용 SVG 아이콘 | Codex |
+| `src/ui/route-map.js`, `src/styles/route-map.css` | 실제 전투 사이 경로 지도. 정비·랜덤 사건 목적지 선택과 별도 이동 확정. 기존 컨트롤러 행동 호출 | Codex |
+| `map-demo.html`, `src/ui/map-demo.js`, `src/styles/map-demo.css` | 독립 분기 지도 UI 데모. 장소 선택·이동 확정·지도 연결선으로 경로 표시. 별도 방문 기록 목록 없음. 실제 런/저장과 연결되지 않음 | Codex |
 | `src/ui/card-metrics.js`, `src/ui/body-diagram.js` | 카드 수치 줄, 신체 도식 | Codex |
 | `src/art/assets.js` | 그림 경로와 로딩된 Image, 생존자 그림 고르기(`heroSprite`) | Codex |
 | `src/audio/engine.js`, `samples.js`, `music.js` | 효과음(Web Audio)·샘플·배경음악(`<audio>`) | Codex |
@@ -41,6 +43,7 @@
                                   → render() → 의미용 DOM → engine-ui가 읽어 Pixi로 그림
 ```
 - 규칙은 `combat-rules.js`에만 있다. 화면 쪽은 `state`를 읽기만 한다.
+- 전투 보상 후 지도 → 정비(치료/강화 중 선택) 또는 랜덤 사건(스킬/동전 보급) → 가방 정리 → 다음 전투. 현재 전투 7구역 순서는 유지한다. 방문한 정비/사건 선은 컨트롤러의 `visitedRoutes`와 별도 `last-shelter:routes` 저장 항목으로 표시한다. 런 저장 UID가 같을 때만 복원한다.
 - 생존자 그림은 `rules.heroAppearance(state)` → `{ classId, injury }`로 고른다.
 - 좌표(`geometry`/`enemyPosition`/`partPosition`)는 `game.js`가 계산해서 전투 장면에 넘긴다.
 
