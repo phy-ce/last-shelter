@@ -7,9 +7,9 @@
 .engine-ui header,
 .engine-ui footer,
 .engine-ui .scene > :not(canvas),
-.engine-ui > .overlay,
-.engine-ui > .tooltip,
-.engine-ui > .preview {
+.engine-ui:not(.engine-dom-modal) > .overlay,
+.engine-ui:not(.engine-dom-modal) > .tooltip,
+.engine-ui:not(.engine-dom-modal) > .preview {
   position: fixed !important;
   left: -20000px !important;
   top: 0 !important;
@@ -18,3 +18,13 @@
   max-height: none;
   pointer-events: none !important;
 }
+
+/* These flows already have purpose-built layout and interactions. */
+.engine-ui.engine-dom-modal > .overlay,
+.engine-ui.engine-dom-modal > .tooltip,
+.engine-ui.engine-dom-modal > .preview { pointer-events: auto; }
+.engine-ui.engine-dom-modal .modal,
+.engine-ui.engine-dom-modal .choice,
+.engine-ui.engine-dom-modal .class-choice,
+.engine-ui.engine-dom-modal .item-preview-card,
+.engine-ui.engine-dom-modal .bag-item { box-shadow: none !important; }

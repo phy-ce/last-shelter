@@ -138,7 +138,9 @@ export function createBattleView(canvas, hooks) {
     burn.anchor.set(0.5, 1)
     burn.blendMode = 'screen'
     burn.visible = false
-    root.addChild(shadow, body, burn)
+    // Flat ellipses read as black puddles rather than grounded shadows against
+    // the painted battlefield, so keep the figure art unshadowed.
+    root.addChild(body, burn)
     return { root, shadow, body, sprite, flash, tint, burn, recoil: 0, flashAmt: 0, tintAmt: 0, lunge: 0, seed: Math.random() * 10, img: null }
   }
 

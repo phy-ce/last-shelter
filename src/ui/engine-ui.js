@@ -43,6 +43,7 @@ export async function createEngineUI(app, hooks) {
   let lastModal = null, scrollY = 0, scrollbox = null
   let keyboardSelection = false, hoveredHandIndex = null
   const semantic = id => document.getElementById(id)
+  const usesDomModal = modal => Boolean(modal && (modal.subtitle === 'CHOOSE SURVIVOR' || ['loot', 'inventory', 'coin'].includes(modal.type)))
   const dispatch = (node, type) => node.dispatchEvent(new PointerEvent(type, { pointerType: 'mouse', bubbles: false }))
 
   function art(node, w, h) {
@@ -116,7 +117,9 @@ export async function createEngineUI(app, hooks) {
   function card(source, w = 190, h = 288) {
     const view = new Container()
     const tone = Object.keys(rarity).find(key => has(source, `rarity-${key}`)) || 'common'
-    view.addChild(box(w, h, 0x251e24, has(source, 'selected upgrade-selected') ? C.gold : rarity[tone], 9))
+    const lockReason = source.querySelector('.injury-lock')?.textContent?.trim()
+      || (has(source, 'unavailable') ? `행동력 부족 · 필요 ${source.querySelector('.cost')?.textContent || '?'}` : '')
+    view.addChild(box(w, h, lockReason ? 0x2b181c : 0x251e24, has(source, 'selected upgrade-selected') ? C.gold : lockReason ? 0xb76262 : rarity[tone], 9))
     view.addChild(new Graphics().roundRect(5, 5, w - 10, h - 10, 6).stroke({ color: rarity[tone], alpha: .35, width: 1 }))
     if (has(source, 'flipped')) {
       const heading = label('LAST SHELTER', w - 32, 15, C.gold, true); heading.position.set(16, 28); view.addChild(heading)
@@ -157,6 +160,15 @@ export async function createEngineUI(app, hooks) {
     if (provenance) { const meta = label([provenance, pile].filter(Boolean).join(' · '), w - 24, 10, C.muted); meta.position.set(12, h - 70); view.addChild(meta) }
     const count = source.querySelector('.card-count')
     if (count) { const quantity = label(count.textContent, 40, 14, C.gold, true); quantity.position.set(12, 12); view.addChild(quantity) }
+    if (lockReason) {
+      const warning = new Container(), bandH = 34
+      // Resting hand cards extend below the viewport. Keep the lock reason in
+      // the portion that is always visible instead of burying it at the foot.
+      warning.position.set(6, 80)
+      warning.addChild(new Graphics().rect(0, 0, w - 12, bandH).fill({ color: 0x541f27, alpha: .94 }))
+      const reason = label(lockReason, w - 28, 11, 0xf4b8b0, true); reason.position.set(8, 7); warning.addChild(reason)
+      view.addChild(warning)
+    }
     if (source.tagName === 'BUTTON' || source.querySelector('.card-back')) interactive(view, source, w, h)
     return { view, w, h: Math.max(h, copy.y + copy.height + 16) }
   }
@@ -169,6 +181,17 @@ export async function createEngineUI(app, hooks) {
       const view = new Container(); let x = 0
       for (const token of node.children) { const item = layoutNode(token, 50); item.view.x = x; view.addChild(item.view); x += item.w + 12 }
       return { view, w: Math.max(0, x - 12), h: 36 }
+    }
+    if (has(node, 'status-token')) {
+      const view = new Container(), glyph = node.querySelector('svg')
+      if (glyph) { const icon = art(glyph, 28, 28); icon.position.set(4, 2); view.addChild(icon) }
+      const valueText = node.querySelector('.status-value')?.textContent?.trim()
+      if (valueText) {
+        const value = label(valueText, 24, 13, C.paper, true)
+        value.position.set(24, 22); view.addChild(value)
+      }
+      if (node.tagName === 'BUTTON') interactive(view, node, 40, 40)
+      return { view, w: 40, h: 40 }
     }
     if (node.tagName === 'IMG' || node.tagName === 'svg') {
       const body = has(node.parentElement, 'body-diagram'), icon = node.tagName === 'svg' && !body, h = body ? 300 : icon ? 24 : has(node.parentElement, 'class-portrait') ? 170 : 110
@@ -388,7 +411,8 @@ export async function createEngineUI(app, hooks) {
     }
     const end = textButton(semantic('endTurn'), 160, 48); end.view.position.set(w - 184, h - 178); hud.addChild(end.view)
     place(hud, semantic('piles'), w - 300, h - 168, 100)
-    place(hud, semantic('injuryBanner'), w / 2 - 250, 160, 500)
+    const injuryBanner = semantic('injuryBanner')
+    if (injuryBanner.classList.contains('active')) place(hud, injuryBanner, w / 2 - 250, 160, 500)
     const cards = [...semantic('hand').querySelectorAll('.card')], cw = 184
     const gap = Math.min(142, Math.max(30, (w - 520 - cw) / Math.max(1, cards.length - 1)))
     const middle = (cards.length - 1) / 2
@@ -485,6 +509,95 @@ export async function createEngineUI(app, hooks) {
     scrollbox = null
   }
 
+  function drawClassDialog(w, h) {
+    const source = semantic('modal')
+    const choices = [...source.querySelectorAll('.class-choice')]
+    const mw = Math.min(1240, w - 64), mh = Math.min(820, h - 48)
+    const shell = new Container()
+    shell.position.set((w - mw) / 2, (h - mh) / 2)
+    shell.addChild(box(mw, mh, 0x100e12, 0x66574d, 8))
+
+    const heading = label('생존자 선택', mw - 64, 28, 0xf0e3d2, true)
+    const description = label(source.querySelector(':scope > .description')?.textContent, mw - 64, 13, C.muted)
+    heading.position.set(28, 20); description.position.set(28, 59)
+    shell.addChild(heading, description)
+
+    const accents = { survivor: 0xc4ad76, mage: 0xaaa1d4, berserker: 0xd4836e }
+    const gap = 18, cardX = 28, cardY = 92, cardH = 264
+    const cardW = (mw - cardX * 2 - gap * Math.max(0, choices.length - 1)) / Math.max(1, choices.length)
+    for (const [index, choice] of choices.entries()) {
+      const key = choice.dataset.class || 'survivor', accent = accents[key] || C.gold
+      const selected = has(choice, 'class-selected')
+      const cardView = new Container()
+      cardView.addChild(box(cardW, cardH, selected ? 0x201b1a : 0x171619, selected ? accent : 0x574d47, 5))
+      const image = choice.querySelector('.class-portrait img')
+      const portrait = art(image, cardW - 24, 154); portrait.position.set(12, 10); cardView.addChild(portrait)
+      const number = label(String(index + 1).padStart(2, '0'), 40, 11, accent, true)
+      const role = label(choice.querySelector('.class-role')?.textContent, cardW - 100, 11, C.muted, true)
+      number.position.set(16, 14); role.position.set(cardW - role.width - 16, 14)
+      const name = label(choice.querySelector('.class-name')?.textContent, cardW - 110, 22, C.paper, true)
+      const hp = label(`♥ ${choice.querySelector('.class-vitality b')?.textContent || ''}`, 74, 16, 0xdf8f7a, true)
+      name.position.set(16, 176); hp.position.set(cardW - hp.width - 16, 179)
+      const trait = label(choice.querySelector('.class-info-row .class-info-copy')?.textContent, cardW - 32, 12, C.muted)
+      trait.position.set(16, 214)
+      cardView.addChild(number, role, name, hp, trait)
+      interactive(cardView, choice, cardW, cardH)
+      cardView.position.set(cardX + index * (cardW + gap), cardY)
+      shell.addChild(cardView)
+    }
+
+    const selected = source.querySelector('.class-choice.class-selected')
+    const detailY = 378, detailH = 330
+    const detail = new Container(); detail.position.set(28, detailY)
+    detail.addChild(box(mw - 56, detailH, 0x141216, 0x51463f, 5))
+    if (!selected) {
+      const prompt = label('위에서 생존자를 선택하면 시작 기술과 소지품을 확인할 수 있습니다.', mw - 120, 18, C.muted)
+      prompt.position.set((mw - 56 - prompt.width) / 2, 142); detail.addChild(prompt)
+    } else {
+      const key = selected.dataset.class || 'survivor', accent = accents[key] || C.gold
+      const rows = [...selected.querySelectorAll('.class-info-row')]
+      const title = label(`${selected.querySelector('.class-name')?.textContent}의 시작 조건`, 300, 20, accent, true)
+      title.position.set(22, 18); detail.addChild(title)
+      const sideW = 310
+      let sideY = 62
+      for (const row of [rows[0], rows[2]].filter(Boolean)) {
+        const rowTitle = label(row.querySelector('.class-info-label')?.textContent, sideW - 36, 11, accent, true)
+        const copy = label(row.querySelector('.class-info-copy')?.textContent, sideW - 36, 13, C.paper)
+        rowTitle.position.set(22, sideY); copy.position.set(22, sideY + 20)
+        detail.addChild(rowTitle, copy); sideY += Math.max(72, copy.height + 34)
+      }
+      detail.addChild(new Graphics().moveTo(sideW, 18).lineTo(sideW, detailH - 18).stroke({ color: 0x51463f, alpha: .8, width: 1 }))
+      const skillTitle = label('시작 기술', 180, 13, accent, true); skillTitle.position.set(sideW + 22, 18); detail.addChild(skillTitle)
+      const skills = [...selected.querySelectorAll('.class-start-card')]
+      const skillGap = 10, cols = 3, skillW = (mw - 56 - sideW - 44 - skillGap * (cols - 1)) / cols
+      for (const [index, skill] of skills.entries()) {
+        const tile = new Container(), tileH = 112
+        tile.addChild(box(skillW, tileH, 0x1b181c, 0x544943, 4))
+        const cost = label(skill.querySelector('.class-start-cost')?.textContent, 54, 11, C.gold, true)
+        const name = label(skill.querySelector('strong')?.textContent, skillW - 76, 14, C.paper, true)
+        const copy = label(skill.querySelector('p')?.textContent, skillW - 24, 12, C.muted)
+        cost.position.set(12, 10); name.position.set(64, 9); copy.position.set(12, 38)
+        tile.addChild(cost, name, copy)
+        tile.position.set(sideW + 22 + index % cols * (skillW + skillGap), 48 + Math.floor(index / cols) * (tileH + skillGap))
+        detail.addChild(tile)
+      }
+    }
+    shell.addChild(detail)
+
+    const footerSource = source.querySelector(':scope > .modal-footer')
+    const confirmSource = footerSource?.querySelector('button')
+    if (confirmSource) {
+      const confirm = textButton(confirmSource, 230, 46)
+      confirm.view.position.set(mw - 28 - 230, mh - 66); shell.addChild(confirm.view)
+      const chosen = label(footerSource.querySelector('.class-confirm-copy strong')?.textContent, mw - 330, 16, selected ? C.paper : C.muted, true)
+      chosen.position.set(28, mh - 56); shell.addChild(chosen)
+    }
+
+    dialogs.addChild(shell)
+    lastModal = hooks.getModal()
+    scrollbox = null
+  }
+
   function drawDialog(w, h) {
     const modal = hooks.getModal()
     if (!modal) return
@@ -492,6 +605,7 @@ export async function createEngineUI(app, hooks) {
     dialogs.eventMode = 'static'; dialogs.hitArea = new Rectangle(0, 0, w, h)
     dialogs.addChild(new Graphics().rect(0, 0, w, h).fill({ color: 0x08060a, alpha: .85 }))
     if (modal.type === 'coin') { drawCoinDialog(w, h); return }
+    if (modal.subtitle === 'CHOOSE SURVIVOR') { drawClassDialog(w, h); return }
     const mw = Math.min(w - 80, modal.type === 'options' && modal.subtitle !== 'CHOOSE SURVIVOR' ? 900 : modal.type === 'settings' ? 800 : 1280)
     const source = semantic('modal'), shell = new Container(), body = new Container()
     const footerSource = source.querySelector(':scope > .modal-footer')
@@ -539,9 +653,11 @@ export async function createEngineUI(app, hooks) {
     }
     scrollbox = null; coinView = null
     const w = app.screen.width, h = app.screen.height
-    drawHud(w, h); drawDialog(w, h)
+    const domModal = usesDomModal(hooks.getModal())
+    document.body.classList.toggle('engine-dom-modal', domModal)
+    drawHud(w, h); if (!domModal) drawDialog(w, h)
     hud.eventMode = hooks.getModal() ? 'none' : 'passive'; hand.eventMode = hooks.getModal() ? 'none' : 'passive'
-    dialogs.eventMode = hooks.getModal() ? 'static' : 'none'
+    dialogs.eventMode = hooks.getModal() && !domModal ? 'static' : 'none'
     drawTip()
   }
 
@@ -638,10 +754,32 @@ export async function createEngineUI(app, hooks) {
   return {
     root,
     refresh() { dirty = true },
-    contains(x, y) { return Boolean(hooks.getModal()) || controls.some(control => !control.view.destroyed && inside(control, { x, y })) },
+    contains(x, y) { return (!usesDomModal(hooks.getModal()) && Boolean(hooks.getModal())) || controls.some(control => !control.view.destroyed && inside(control, { x, y })) },
     snapshot() { return controls.filter(control => !control.view.destroyed).map(control => { const p = control.view.toGlobal({ x: control.w / 2, y: control.h / 2 }); return { text: control.source.getAttribute('aria-label') || control.source.textContent.trim(), id: control.source.id, x: p.x, y: p.y, disabled: Boolean(control.source.disabled) } }) },
     async tossCoin(result, motion) {
-      // Keep controller outcome and timing, but animate a native sprite on the stage.
+      const domCoin = semantic('modal').querySelector('.coin')
+      if (usesDomModal(hooks.getModal()) && domCoin) {
+        const angle = result === 'heads' ? 1800 : 1980
+        const frames = motion ? [
+          { transform: 'translateY(0) rotateX(0deg) scale(1)', offset: 0 },
+          { transform: 'translateY(12px) rotateX(-25deg) scale(.94)', offset: .07 },
+          { transform: 'translateY(-80px) rotateX(720deg) scale(.83)', offset: .32 },
+          { transform: 'translateY(-96px) rotateX(1080deg) scale(.78)', offset: .48 },
+          { transform: 'translateY(-66px) rotateX(1440deg) scale(.87)', offset: .64 },
+          { transform: `translateY(0) rotateX(${angle}deg) scale(1)`, offset: .84 },
+          { transform: `translateY(-12px) rotateX(${angle + 18}deg) scale(1.04)`, offset: .9 },
+          { transform: `translateY(0) rotateX(${angle}deg) scale(1)`, offset: 1 },
+        ] : [
+          { transform: `rotateX(${angle}deg)`, opacity: .5 },
+          { transform: `rotateX(${angle}deg)`, opacity: 1 },
+        ]
+        const animation = domCoin.animate(frames, { duration: motion ? 1900 : 120, easing: 'linear', fill: 'forwards' })
+        await animation.finished.catch(() => {})
+        domCoin.style.transform = `rotateX(${result === 'heads' ? 0 : 180}deg)`
+        animation.cancel()
+        return
+      }
+      // Native fallback for contexts where the DOM coin is not visible.
       const native = coinView
       if (!native) return new Promise(resolve => setTimeout(resolve, motion ? 1900 : 120))
       coinTween = gsap.timeline({ onComplete: () => { coinTween = null; dirty = true } })

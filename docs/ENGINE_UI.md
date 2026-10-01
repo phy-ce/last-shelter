@@ -1,9 +1,11 @@
 # Native engine UI
 
-`src/ui/engine-ui.js` owns visible gameplay UI: HUD, enemy readouts, hand,
-menus, inventory slots, cards, tooltip panels, settings controls and coin motion.
-Pixi Graphics/Text/Sprite draw it; Pixi federated events and
-`@pixi/ui` components handle input. Toolbar flex layout uses `@pixi/layout`.
+`src/ui/engine-ui.js` owns the visible battle HUD, enemy readouts, hand and
+simple menus. Pixi Graphics/Text/Sprite draw those surfaces; Pixi federated
+events and `@pixi/ui` components handle input. Toolbar flex layout uses
+`@pixi/layout`. Character selection, loot, inventory and coin judgment retain
+their purpose-built DOM/CSS layouts instead of being flattened through the
+generic Pixi modal renderer.
 
 ## Templates and assets
 
@@ -15,10 +17,11 @@ Pixi Graphics/Text/Sprite draw it; Pixi federated events and
 - Icons: the project's existing Tabler SVG set; vector geometry is rasterized as
   individual Pixi textures, not as HTML screenshots.
 
-The coin judgment uses its own compact centered layout instead of the generic
-modal flow: title, dark toss stage, coin, outcome stakes and choice controls stay
-in one vertical reading path. The controller still decides the outcome, and the
-existing GSAP toss/flip timing is unchanged.
+The coin judgment uses its original centered DOM layout and original eight-step
+Web Animations toss/flip sequence. The controller still decides the outcome.
+Status effects render as bare icon/value tokens without card-like boxes, and
+temporary depletion/injury banners are drawn only while their `active` state is
+present. Flat character ground-shadow ellipses are intentionally omitted.
 
 The hand rests in a shallow, overlapping fan at the bottom center of the battlefield,
 without a backing panel. Card count controls spacing and rotation; a single card
