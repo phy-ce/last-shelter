@@ -128,49 +128,67 @@ export async function createEngineUI(app, hooks) {
       return { view, w, h }
     }
     const img = source.querySelector('img:not(.upgrade-mark)')
-    if (img) { const image = art(img, w - 16, 106); image.position.set(8, 8); view.addChild(image) }
+    if (img) { const image = art(img, w - 16, 94); image.position.set(8, 8); view.addChild(image) }
+    const provenance = source.querySelector('.item-source')?.textContent?.trim().replace(/^출처\s*[·:]\s*/, '')
+    const pile = source.querySelector('.pile-label')?.textContent?.trim()
+    if (provenance) {
+      const uses = source.querySelector('.uses-badge')
+      const origin = provenance === '스킬' ? '스킬' : `${uses ? '소모품' : '장비'} / ${provenance}`
+      const ribbon = new Container()
+      ribbon.position.set(8, 102)
+      ribbon.addChild(new Graphics()
+        .rect(0, 0, w - 16, 22)
+        .fill({ color: 0x111314, alpha: .96 })
+        .stroke({ color: rarity[tone], alpha: .72, width: 1 }))
+      const originText = label([origin, pile].filter(Boolean).join(' · '), w - 30, 10, rarity[tone], true)
+      originText.position.set(7, 4)
+      ribbon.addChild(originText)
+      view.addChild(ribbon)
+    }
     const title = (source.querySelector('.card-title') || source.querySelector('.content > strong') || source.querySelector('strong'))?.textContent || ''
     const titleCost = title.match(/\s*·\s*(\d+) AP$/)
-    const titleText = label(title.replace(/\s*·\s*\d+ AP$/, ''), w - 24, 15, C.gold, true); titleText.position.set(12, 122); view.addChild(titleText)
-    let y = 124 + titleText.height
+    const titleText = label(title.replace(/\s*·\s*\d+ AP$/, ''), w - 24, 15, C.gold, true); titleText.position.set(12, 132); view.addChild(titleText)
+    const metricsY = 156
     const metrics = source.querySelector('.card-metrics')
     if (metrics) {
       let x = 12
       for (const metric of metrics.children) {
-        const glyph = metric.querySelector('svg'); if (glyph) { const image = art(glyph, 18, 18); image.position.set(x, y); view.addChild(image); x += 22 }
-        const value = label(clean(metric), 55, 14, C.gold, true); value.position.set(x, y - 1); view.addChild(value); x += value.width + 12
+        const glyph = metric.querySelector('svg'); if (glyph) { const image = art(glyph, 18, 18); image.position.set(x, metricsY); view.addChild(image); x += 22 }
+        const value = label(clean(metric), 55, 14, C.gold, true); value.position.set(x, metricsY - 1); view.addChild(value); x += value.width + 12
       }
-      y += 26
     }
     const detail = source.querySelector('.card-detail, .card-rules, .card-summary')?.textContent || ''
-    const copy = label(detail, w - 24, 13); copy.position.set(12, y + 6); view.addChild(copy)
     const divider = new Graphics()
       .moveTo(0, 0).lineTo(w - 24, 0).stroke({ color: rarity[tone], alpha: .62, width: 1 })
       .moveTo(0, 2).lineTo(Math.min(54, w - 24), 2).stroke({ color: rarity[tone], alpha: .28, width: 1 })
-    divider.position.set(12, y + 2); view.addChild(divider)
+    divider.position.set(12, 184); view.addChild(divider)
+    const detailZone = new Container()
+    detailZone.position.set(12, 194)
+    const copy = label(detail, w - 24, 13)
+    const detailMask = new Graphics().rect(0, 0, w - 24, 58).fill(0xffffff)
+    detailZone.addChild(copy, detailMask)
+    detailZone.mask = detailMask
+    view.addChild(detailZone)
     const cost = source.querySelector('.cost')
     if (cost || titleCost) { const token = iconCount(uiIcon('energy'), cost?.textContent || titleCost[1]); token.view.position.set(w - 48, 10); view.addChild(token.view) }
     const uses = source.querySelector('.uses-badge')
     if (uses) { const token = label(uses.textContent, w - 24, 11); token.position.set(12, h - 26); view.addChild(token) }
     const shortcut = source.querySelector('.shortcut')
     if (shortcut) { const token = label(shortcut.textContent, 30, 14, C.gold); token.position.set(12, 12); view.addChild(token) }
-    const upgrade = source.querySelector('img.upgrade-mark'); if (upgrade) { const mark = art(upgrade, 32, 32); mark.position.set(w - 44, 80); view.addChild(mark) }
-    const provenance = source.querySelector('.item-source')?.textContent
-    const pile = source.querySelector('.pile-label')?.textContent
-    if (provenance) { const meta = label([provenance, pile].filter(Boolean).join(' · '), w - 24, 10, C.muted); meta.position.set(12, h - 70); view.addChild(meta) }
+    const upgrade = source.querySelector('img.upgrade-mark'); if (upgrade) { const mark = art(upgrade, 32, 32); mark.position.set(w - 44, 66); view.addChild(mark) }
     const count = source.querySelector('.card-count')
     if (count) { const quantity = label(count.textContent, 40, 14, C.gold, true); quantity.position.set(12, 12); view.addChild(quantity) }
     if (lockReason) {
       const warning = new Container(), bandH = 34
       // Resting hand cards extend below the viewport. Keep the lock reason in
       // the portion that is always visible instead of burying it at the foot.
-      warning.position.set(6, 80)
+      warning.position.set(6, 66)
       warning.addChild(new Graphics().rect(0, 0, w - 12, bandH).fill({ color: 0x541f27, alpha: .94 }))
       const reason = label(lockReason, w - 28, 11, 0xf4b8b0, true); reason.position.set(8, 7); warning.addChild(reason)
       view.addChild(warning)
     }
     if (source.tagName === 'BUTTON' || source.querySelector('.card-back')) interactive(view, source, w, h)
-    return { view, w, h: Math.max(h, copy.y + copy.height + 16) }
+    return { view, w, h }
   }
 
   function layoutNode(node, width) {

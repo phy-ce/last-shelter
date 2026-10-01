@@ -1627,7 +1627,7 @@ const displayFont = (() => {
         content.append(itemSection, cardSection);
         footer.textContent = "C / Esc 닫기";
       } else if (m.type === "deck" || m.type === "upgrade") {
-        const cards = m.type === "upgrade" ? state.deck.filter((c) => rules.isUpgradable(state, c)) : m.cards || state.deck;
+        const cards = m.type === "upgrade" ? rules.upgradeCandidates(state) : m.cards || state.deck;
         let cardList = content;
         let equipmentList = null;
         let skillList = null;
@@ -1652,7 +1652,7 @@ const displayFont = (() => {
           const equipmentSection = el("section", "upgrade-candidate-section upgrade-equipment-section");
           const equipmentHeading = el("div", "upgrade-section-heading");
           equipmentHeading.append(uiIcon("settings"), el("div", "", ""));
-          equipmentHeading.lastElementChild.append(el("strong", "", "장비"), el("span", "", "하나를 선택하면 소속 카드가 전부 강화됩니다."));
+          equipmentHeading.lastElementChild.append(el("strong", "", "장비"), el("span", "", "장착 여부와 관계없이 하나를 선택하면 소속 카드가 전부 강화됩니다."));
           equipmentList = el("div", "deck-grid upgrade-candidate-grid");
           equipmentSection.append(equipmentHeading, equipmentList);
           const skillSection = el("section", "upgrade-candidate-section upgrade-skill-section");
@@ -1709,8 +1709,9 @@ const displayFont = (() => {
               const selectionMark = el("span", "upgrade-selection-mark", chosen ? "선택됨" : "선택");
               selectionMark.prepend(uiIcon("choice"));
               const heading = el("div", "upgrade-bundle-heading");
+              const equipped = rules.isEquipped(state, item.uid);
               heading.append(
-                el("span", "upgrade-kind", "장비 강화"),
+                el("span", "upgrade-kind", `장비 강화 · ${equipped ? "장착 중" : "가방"}`),
                 el("strong", "", itemData.name),
                 el("small", "", `카드 ${bundle.length}장 동시 강화`)
               );

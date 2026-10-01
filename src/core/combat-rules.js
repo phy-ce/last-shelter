@@ -1234,6 +1234,23 @@ export function isUpgradable(state, card) {
   return !item || itemDef(item.key).kind !== 'consumable'
 }
 
+/** 정비소 후보. 덱에 없는 가방 속 무기도 장비 묶음으로 포함한다. */
+export function upgradeCandidates(state) {
+  const candidates = state.deck.filter(card => isUpgradable(state, card))
+  const representedItems = new Set(candidates.filter(card => card.sourceItem != null).map(card => card.sourceItem))
+  for (const item of state.inventory) {
+    const data = itemDef(item.key)
+    if (data.kind !== 'hand' || item.upgraded || representedItems.has(item.uid)) continue
+    data.cards.forEach((key, index) => candidates.push({
+      id: `stored-item:${item.uid}:${index}`,
+      key,
+      upgraded: false,
+      sourceItem: item.uid,
+    }))
+  }
+  return candidates
+}
+
 /** 이번 정비소에서 고를 스킬 장수. 강화 안 된 독립 스킬이 2장보다 적으면 그만큼. */
 export function skillUpgradeCount(state) {
   return Math.min(SKILL_UPGRADE_COUNT, state.deck.filter(c => !c.upgraded && c.sourceItem == null).length)

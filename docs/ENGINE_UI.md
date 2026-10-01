@@ -30,6 +30,10 @@ to 106% around its bottom-center pivot. Hit testing
 uses local rotated coordinates and front-to-back order, retaining the hovered
 card over its original footprint to prevent oscillation during the lift.
 Native control snapshots transform their centers through the card pivot/rotation.
+Each card uses fixed vertical regions for illustration, a bordered source ribbon,
+title, metrics, clipped rules text and footer metadata. Equipment and consumable
+sources include both category and item name, so provenance never competes with
+variable-length rules text.
 Only mouse hover or keyboard selection
 raises a card to show its effect below the art; mouse selection alone does not
 keep it raised after the pointer leaves. Deck and codex cards flip by clicking
@@ -49,8 +53,8 @@ available. This is a rendering/input migration, not removal of the DOM controlle
 
 Inventory drag/drop delegates to existing `dropAt`, `equipRef`, `discardRef`;
 placement hints call read-only `rules.canPlace`. The renderer does not write
-inventory positions or combat state. Coin outcomes stay in the controller; only
-the visible animation moves to GSAP/Pixi.
+inventory positions or combat state. Coin outcomes and their DOM animation stay
+in the controller.
 
 ## Review
 
