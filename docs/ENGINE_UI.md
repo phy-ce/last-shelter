@@ -25,7 +25,9 @@ present. Flat character ground-shadow ellipses are intentionally omitted.
 
 The hand rests in a shallow, overlapping fan at the bottom center of the battlefield,
 without a backing panel. Card count controls spacing and rotation; a single card
-stays upright. Hover brings one card to the front, straightens it and scales it
+stays upright. The battlefield ground line reserves 350px below the characters,
+keeping feet and limb targets above the expanded hand's 330px lane.
+Hover brings one card to the front, straightens it and scales it
 to 106% around its bottom-center pivot. Hit testing
 uses local rotated coordinates and front-to-back order, retaining the hovered
 card over its original footprint to prevent oscillation during the lift.
