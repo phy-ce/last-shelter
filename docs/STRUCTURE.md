@@ -24,6 +24,7 @@
 | `src/boot/preload.js` | 그림 선로딩. 전투 그림·카드 그림은 필수로 받고, 카드 그림은 디코딩해 들고 있다가 복제해 쓴다 | 공유 |
 | `src/render/battle-view.js` | 전투 장면(Pixi). 배경·인물·적·이펙트·입자·빛·카메라. `state`는 읽기만 | Codex |
 | `src/ui/engine-ui.js` | 게임 UI(Pixi). 상단 정보·손패·모달·가방·툴팁. 자세한 건 `ENGINE_UI.md` | Codex |
+| `src/styles/combat-debug.css` | F3 전투 UI 디버그 메뉴. 구역·실제 카드/타깃 경계 표시는 engine-ui의 입력 비활성 Pixi 레이어 | Codex |
 | `src/ui/icons.js` | 공용 SVG 아이콘 | Codex |
 | `src/ui/route-map.js`, `src/styles/route-map.css` | 실제 전투 사이 경로 지도. 정비·랜덤 사건 목적지 선택과 별도 이동 확정. 기존 컨트롤러 행동 호출 | Codex |
 | `map-demo.html`, `src/ui/map-demo.js`, `src/styles/map-demo.css` | 독립 분기 지도 UI 데모. 장소 선택·이동 확정·지도 연결선으로 경로 표시. 별도 방문 기록 목록 없음. 실제 런/저장과 연결되지 않음 | Codex |

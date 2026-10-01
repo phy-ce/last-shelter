@@ -5,6 +5,7 @@ import { Button, CheckBox, ScrollBox, Slider } from '@pixi/ui'
 import { gsap } from 'gsap'
 import { motionOn } from '../core/settings.js'
 import { uiIcon } from './icons.js'
+import '../styles/combat-debug.css'
 
 const C = { paper: 0xe3d5c1, muted: 0xad9985, gold: 0xdfbd83, panel: 0x221b20, line: 0x655247 }
 const font = 'Malgun Gothic, sans-serif'
@@ -37,12 +38,23 @@ export async function createEngineUI(app, hooks) {
   hand.sortableChildren = true
   const dropHint = new Graphics()
   root.addChild(hud, hand, combatDialogue, dialogs, tips, dropHint)
+  const debugRegions = new Container({ label: 'combat-debug-regions', eventMode: 'none' })
+  root.addChild(debugRegions)
   app.stage.addChild(root)
   const textures = new Map(), controls = [], regions = []
   let dirty = true, tipDirty = true, pointer = { x: 0, y: 0 }, drag = null, coinTween = null, menuTip = null, coinView = null, editingSlider = false
   let lastModal = null, scrollY = 0, scrollbox = null
   let keyboardSelection = false, hoveredHandIndex = null
   const semantic = id => document.getElementById(id)
+  const debugMenu = document.createElement('aside')
+  debugMenu.className = 'combat-debug-menu'
+  debugMenu.hidden = true
+  debugMenu.setAttribute('aria-label', '전투 UI 디버그')
+  debugMenu.innerHTML = '<strong>전투 UI 디버그 · F3</strong><label><input type="checkbox"> 구역 표시</label><small>현재 배치 표시 · 위치/크기 변경 없음</small>'
+  document.body.append(debugMenu)
+  const debugToggle = debugMenu.querySelector('input')
+  debugToggle.setAttribute('aria-label', '전투 UI 구역 표시')
+  let debugSignature = ''
   const usesDomModal = modal => Boolean(modal && (modal.subtitle === 'CHOOSE SURVIVOR' || ['loot', 'inventory', 'coin', 'route'].includes(modal.type)))
   const dispatch = (node, type) => node.dispatchEvent(new PointerEvent(type, { pointerType: 'mouse', bubbles: false }))
 
@@ -451,6 +463,41 @@ export async function createEngineUI(app, hooks) {
     })
   }
 
+  function drawDebugRegions() {
+    const enabled = debugToggle.checked && hooks.getState() && !hooks.getModal()
+    const bounds = enabled ? controls.filter(control => !control.view.destroyed && control.source.closest('#hand, #targets'))
+      .map(control => ({ control, bounds: control.view.getBounds() })) : []
+    const w = app.screen.width, h = app.screen.height, g = hooks.geometry()
+    const signature = enabled ? JSON.stringify([w, h, g.ground, g.scale, bounds.map(({ control, bounds: b }) => [control.handIndex, b.x, b.y, b.width, b.height].map(value => typeof value === 'number' ? Math.round(value * 10) / 10 : value))]) : 'off'
+    if (signature === debugSignature) return
+    debugSignature = signature
+    for (const child of debugRegions.removeChildren()) child.destroy({ children: true })
+    if (!enabled) return
+    const region = (name, x, y, width, height, color, tint = false, textOffset = 4) => {
+      if (width <= 0 || height <= 0) return
+      const outline = new Graphics().rect(x, y, width, height)
+      if (tint) outline.fill({ color, alpha: .12 })
+      outline.stroke({ color, width: 2, alpha: .9 })
+      const text = label(name, Math.max(140, width - 12), 13, color, true)
+      text.position.set(x + 6, y + textOffset)
+      debugRegions.addChild(outline, text)
+    }
+    const handTop = Math.max(72, h - (24 + 288 * 1.06))
+    const ground = Math.max(72, g.ground + 6)
+    region('상단 HUD', 1, 1, w - 2, 70, 0x69baff)
+    region('전투 / 캐릭터 영역', 1, 72, w - 2, ground - 72, 0x6de0a2)
+    region('손패 / 확대 카드 영역', 1, handTop, w - 2, h - handTop - 1, 0xf1c36a, false, Math.max(4, ground - handTop + 8))
+    region('겹침: 전투 ↔ 펼친 카드', 1, handTop, w - 2, ground - handTop, 0xff7188, true)
+    region('턴 종료 / 더미 HUD', w - 240, h - 182, 238, 154, 0x69baff)
+    debugRegions.addChild(new Graphics().moveTo(0, g.ground).lineTo(w, g.ground).stroke({ color: 0xffffff, width: 1, alpha: .8 }))
+    const info = label(`바닥 y=${Math.round(g.ground)} · 화면 ${Math.round(w)}×${Math.round(h)} · 캐릭터 기본 배율 ${g.scale.toFixed(3)}`, 670, 13, 0xffffff)
+    info.position.set(290, 76); debugRegions.addChild(info)
+    // Actual animated card bounds, not the proposed lane: expose overlaps honestly.
+    for (const { control, bounds: b } of bounds) {
+      region(control.source.closest('#hand') ? `카드 ${control.handIndex + 1}` : '적 정보 / 타깃', b.x, b.y, b.width, b.height, 0xd8a2ff)
+    }
+  }
+
   function drawCombatDialogue(w, h) {
     const cue = hooks.getEnemyDialogue?.()
     if (!cue || hooks.getModal()) return
@@ -719,6 +766,7 @@ export async function createEngineUI(app, hooks) {
   })
   for (const id of ['app', 'overlay', 'tooltip']) observer.observe(semantic(id), { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['hidden', 'class', 'disabled', 'aria-pressed'] })
   app.ticker.add(redraw)
+  app.ticker.add(drawDebugRegions)
   app.renderer.on('resize', () => { dirty = true })
   app.stage.eventMode = 'static'
   app.stage.hitArea = app.screen
@@ -779,6 +827,12 @@ export async function createEngineUI(app, hooks) {
   document.addEventListener('change', () => { dirty = true })
   app.stage.on('pointerupoutside', cancelDrag)
   document.addEventListener('keydown', event => {
+    if (event.code === 'F3') {
+      event.preventDefault(); event.stopImmediatePropagation()
+      debugMenu.hidden = !debugMenu.hidden
+      return
+    }
+    if (event.target.closest?.('.combat-debug-menu')) return
     if (/^(Digit[0-9]|Numpad[0-9]|Tab|Enter|Space)$/.test(event.code)) { keyboardSelection = true; hoveredHandIndex = null; dirty = true }
     if (drag && event.code === 'KeyR') { event.preventDefault(); event.stopImmediatePropagation(); drag.rot = drag.rot ? 0 : 1; const w = drag.view.hitArea.width; drag.view.hitArea.width = drag.view.hitArea.height; drag.view.hitArea.height = w; drag.view.rotation += Math.PI / 2 }
     if (drag && event.code === 'Escape') { event.stopImmediatePropagation(); cancelDrag() }

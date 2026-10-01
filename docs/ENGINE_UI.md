@@ -25,8 +25,8 @@ present. Flat character ground-shadow ellipses are intentionally omitted.
 
 The hand rests in a shallow, overlapping fan at the bottom center of the battlefield,
 without a backing panel. Card count controls spacing and rotation; a single card
-stays upright. The battlefield ground line reserves 350px below the characters,
-keeping feet and limb targets above the expanded hand's 330px lane.
+stays upright. Characters retain their background-aligned ground line; hand
+layout must avoid targets without moving that ground line.
 Hover brings one card to the front, straightens it and scales it
 to 106% around its bottom-center pivot. Hit testing
 uses local rotated coordinates and front-to-back order, retaining the hovered
@@ -92,6 +92,13 @@ destination types. Encounter candidates stay hidden. Actual encounter selection
 and maintenance actions are not implemented here.
 
 ## Review
+
+F3 opens the presentation-only combat debug menu. Its region checkbox draws
+non-interactive Pixi outlines for the top HUD, character field, expanded-hand
+lane, lower-right controls and actual animated card/target bounds. A red band
+marks the current field/hand overlap; a ground line and viewport/base-scale
+readout expose the existing geometry without changing it. The toggle defaults
+off and is session-only. Menu styling lives in `src/styles/combat-debug.css`.
 
 Run `npm run build`, then `npm run smoke:serve` and `npm run smoke`. Inspect the
 native UI at 1920×1080, including mouse card selection, context menu, modal close,

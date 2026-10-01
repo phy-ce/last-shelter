@@ -432,8 +432,7 @@ const displayFont = (() => {
       const wideCombat = view.w / Math.max(1, view.h) > 2.7;
       return {
         scale: Math.max(0.18, Math.min((view.h - 90) / 270, view.w / 1120)),
-        // Expanded hand cards occupy the bottom 330px; keep feet above that lane.
-        ground: view.h - 350,
+        ground: view.h - 260,
         wideCombat,
         heroX: view.w * 0.18
       };

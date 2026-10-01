@@ -1,0 +1,17 @@
+.combat-debug-menu {
+  position: fixed;
+  z-index: 2000;
+  top: 110px;
+  left: 12px;
+  display: grid;
+  gap: 10px;
+  padding: 14px 18px;
+  border: 1px solid #69baff;
+  background: #111923ed;
+  color: #e3eaf2;
+  font: 14px 'Malgun Gothic', sans-serif;
+}
+.combat-debug-menu[hidden] { display: none; }
+.combat-debug-menu label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.combat-debug-menu small { color: #a6b5c5; }
+.combat-debug-menu input { accent-color: #69baff; }
